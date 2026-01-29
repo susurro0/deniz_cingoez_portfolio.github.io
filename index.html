@@ -1,40 +1,204 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Portfolio of susurro0</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Deniz — Engineering Leader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; max-width: 800px; margin: 2rem auto; padding: 0 1rem; }
-    header { text-align: center; margin-bottom: 2rem; }
-    nav a { margin: 0 .5rem; }
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #38bdf8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+    }
+
+    header {
+      margin-bottom: 4rem;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    header p {
+      max-width: 720px;
+      color: var(--muted);
+      font-size: 1.1rem;
+    }
+
+    section {
+      margin-bottom: 4rem;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1.5rem;
+      border-left: 4px solid var(--accent);
+      padding-left: 1rem;
+    }
+
+    .card {
+      background: var(--card);
+      padding: 1.75rem;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      color: var(--muted);
+    }
+
+    ul {
+      margin-top: 1rem;
+      padding-left: 1.25rem;
+    }
+
+    li {
+      margin-bottom: 0.5rem;
+    }
+
+    footer {
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin-top: 4rem;
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 2rem;
+      }
+    }
   </style>
 </head>
+
 <body>
-  <header>
-    <h1>Hello — I'm susurro0</h1>
-    <p>Developer / Designer / whatever-you-do</p>
-    <nav>
-      <a href="#projects">Projects</a> · <a href="#about">About</a> · <a href="#contact">Contact</a>
-    </nav>
-  </header>
+  <div class="container">
 
-  <section id="projects">
-    <h2>Projects</h2>
-    <ul>
-      <li><strong>Project A</strong> — short description and link.</li>
-      <li><strong>Project B</strong> — short description and link.</li>
-    </ul>
-  </section>
+    <!-- HERO -->
+    <header>
+  <h1>Deniz</h1>
+  <p>
+    Senior Engineering Manager focused on ML & analytics platforms. 
+    I design scalable systems, mentor engineers, and operate at the intersection 
+    of engineering, data, and business, continuously growing my leadership impact.
+  </p>
+</header>
 
-  <section id="about">
-    <h2>About</h2>
-    <p>Short text about your skills and experience.</p>
-  </section>
+<!-- ABOUT -->
+<section>
+  <h2>About</h2>
+  <div class="card">
+    <p>
+      Senior Engineering Manager with hands-on experience building ML & analytics platforms. 
+      I lead a team, design scalable systems, and drive technical strategy, 
+      while focusing on long-term platform sustainability, team growth, and business impact.
+    </p>
 
-  <section id="contact">
-    <h2>Contact</h2>
-    <p>Email: example@mail.com · GitHub: <a href="https://github.com/susurro0">susurro0</a></p>
-  </section>
+    <br/>
+    <p>
+        Currently, I work within Allstate’s live insurance financial analytics organization, 
+        where my team builds ML models in Azure and delivers dashboards and tooling 
+        used directly by insurance agents. I collaborate closely with stakeholders, 
+        product, and business partners, influence architectural decisions, and help 
+        engineers grow into stronger technical and leadership roles.
+    </p>
+    <br/>
+  </div>
+</section>
+
+    <!-- CASE STUDIES -->
+    <div class="card">
+        <h3>Financial Analytics ML Platform & Dashboards (Anonymized)</h3>
+        <p>
+            Senior Engineering Manager — Most Recent
+        </p>
+        <ul>
+            <li>Led a team delivering machine learning models and analytics dashboards for Allstate Finance</li>
+            <li>Built and deployed ML solutions in Azure to support financial insights and reporting</li>
+            <li>Delivered dashboards and tooling used by finance stakeholders for decision-making</li>
+            <li>Collaborated closely with finance, product, and business partners to align technical solutions with business needs</li>
+            <li>Contributed to architectural decisions focused on reliability, scalability, and maintainability</li>
+        </ul>
+    </div>
+    <div class="card">
+        <h3>MyAssistant — AI-Powered HR Platform (Anonymized)</h3>
+        <p>
+            Senior Engineering Manager — Earlier Initiative
+        </p>
+        <ul>
+            <li>Led development of an AI-powered HR assistant to automate employee support workflows</li>
+            <li>Designed and delivered “do-it-for-me” capabilities, including booking PTO through Workday integration</li>
+            <li>Architected backend services using Java (Spring Boot) and Python, with a React-based user interface</li>
+            <li>Integrated enterprise systems including Workday and Microsoft Graph API</li>
+            <li>Improved employee self-service and reduced manual HR support effort</li>
+        </ul>
+    </div>
+
+
+    <!-- THOUGHT LEADERSHIP -->
+    <section>
+      <h2>Thought Leadership</h2>
+      <div class="card">
+        <ul>
+          <li>Productionizing Machine Learning for Real Users</li>
+          <li>What Changes When You Move from Engineer to Engineering Leader</li>
+          <li>Designing Analytics Platforms That Teams Actually Use</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section>
+      <h2>Contact</h2>
+      <div class="card">
+        <p>
+          <a href="#">LinkedIn</a> ·
+          <a href="#">GitHub</a> ·
+          <a href="mailto:dcingoez@yahoo.com">Email</a>
+        </p>
+      </div>
+    </section>
+
+    <footer>
+      © 2026 Deniz — Engineering Leadership Portfolio
+    </footer>
+
+  </div>
 </body>
 </html>
