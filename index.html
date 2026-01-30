@@ -3,274 +3,127 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Deniz — Engineering Leader</title>
+  <title>Deniz — Engineering Leadership</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0f172a;
       --card: #1e293b;
-      --card-hover: #1e293b;
       --text: #f8fafc;
       --muted: #94a3b8;
       --accent: #38bdf8;
       --border: #334155;
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.7;
-    }
-
-    a {
-      color: var(--accent);
-      text-decoration: none;
-      transition: opacity 0.2s;
-    }
-
-    a:hover {
-      text-decoration: underline;
-      opacity: 0.8;
-    }
-
-    .container {
-      max-width: 850px;
-      margin: 0 auto;
-      padding: 5rem 1.5rem;
-    }
-
-    header {
-      margin-bottom: 5rem;
-    }
-
-    header h1 {
-      font-size: 3rem;
-      font-weight: 800;
-      margin-bottom: 1rem;
-      letter-spacing: -0.02em;
-    }
-
-    header p {
-      max-width: 650px;
-      color: var(--muted);
-      font-size: 1.25rem;
-      font-weight: 400;
-    }
-
-    section {
-      margin-bottom: 5rem;
-    }
-
-    h2 {
-      font-size: 1.25rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      margin-bottom: 2rem;
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-    }
-
-    h2::after {
-      content: "";
-      height: 1px;
-      flex-grow: 1;
-      background: var(--border);
-      margin-left: 1rem;
-    }
-
-    .card {
-      background: var(--card);
-      padding: 2rem;
-      border-radius: 16px;
-      margin-bottom: 1.5rem;
-      border: 1px solid var(--border);
-      transition: all 0.3s ease;
-    }
-
-    .card:hover {
-      transform: translateY(-4px);
-      border-color: #475569;
-      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.5);
-    }
-
-    .card h3 {
-      font-size: 1.3rem;
-      margin-bottom: 0.5rem;
-      font-weight: 600;
-    }
-
-    .card p {
-      color: var(--muted);
-      margin-bottom: 1rem;
-    }
-
-    .tag-container {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-bottom: 1.25rem;
-    }
-
-    .tag {
-      font-size: 0.7rem;
-      font-weight: 700;
-      background: rgba(56, 189, 248, 0.1);
-      color: var(--accent);
-      padding: 0.2rem 0.6rem;
-      border-radius: 4px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    ul {
-      padding-left: 1.2rem;
-      color: var(--text);
-    }
-
-    li {
-      margin-bottom: 0.75rem;
-    }
-
-    .philosophy-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-    }
-
-    footer {
-      text-align: left;
-      color: var(--muted);
-      font-size: 0.9rem;
-      margin-top: 6rem;
-      border-top: 1px solid var(--border);
-      padding-top: 2rem;
-    }
-
-    @media (max-width: 768px) {
-      .philosophy-grid { grid-template-columns: 1fr; }
-      header h1 { font-size: 2.5rem; }
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    .container { max-width: 850px; margin: 0 auto; padding: 5rem 1.5rem; }
+    header { margin-bottom: 4rem; }
+    header h1 { font-size: 3rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    header p { color: var(--muted); font-size: 1.2rem; max-width: 700px; }
+    section { margin-bottom: 5rem; }
+    h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 2rem; color: var(--accent); display: flex; align-items: center; }
+    h2::after { content: ""; height: 1px; flex-grow: 1; background: var(--border); margin-left: 1rem; }
+    .card { background: var(--card); padding: 2rem; border-radius: 12px; margin-bottom: 1.5rem; border: 1px solid var(--border); transition: 0.3s; }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card h3 { margin-bottom: 0.75rem; font-size: 1.3rem; }
+    .tag { font-size: 0.7rem; background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 0.2rem 0.5rem; border-radius: 4px; margin-right: 0.5rem; font-weight: 700; }
+    ul { padding-left: 1.2rem; margin-top: 1rem; }
+    li { margin-bottom: 0.5rem; color: var(--text); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+    a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
   </style>
 </head>
-
 <body>
   <div class="container">
 
     <header>
       <h1>Deniz</h1>
-      <p>
-        Senior Engineering Manager specialized in **ML & analytics platforms**. 
-        I build high-performing teams and scalable systems that turn complex data into business-critical insights.
-      </p>
+      <p>Senior Engineering Manager | Building Scalable ML Platforms & High-Performance Teams</p>
     </header>
 
     <section>
-      <h2>About</h2>
+      <h2>Strategic Overview</h2>
       <div class="card">
         <p>
-          I lead multi-disciplinary teams at the intersection of engineering and data science. Currently, at <strong>Allstate</strong>, I oversee the development of financial analytics platforms that empower agents with real-time ML insights.
-        </p>
-        <p style="margin-top: 1rem;">
-          My approach balances technical excellence with sustainable delivery. I focus on bridging the gap between high-level business strategy and ground-level technical architecture, ensuring that every line of code serves a long-term goal.
+          I lead multi-disciplinary teams at <strong>Allstate</strong>, specializing in the architecture and delivery of ML-driven financial analytics. I focus on bridging the gap between high-level business strategy and technical execution—designing systems that are not only scalable but also sustainable and auditable.
         </p>
       </div>
     </section>
 
     <section>
-      <h2>Impact & Experience</h2>
+      <h2>The Architecture Lab</h2>
+      <div class="card" style="border-left: 4px solid var(--accent);">
+        <h3>System Design & Hands-on Projects</h3>
+        <p>I maintain an active repository of enterprise blueprints, RFCs, and proof-of-concepts to stay at the frontier of platform engineering.</p>
+        <div style="margin: 1rem 0;">
+          <span class="tag">RAG Arch</span><span class="tag">Event-Driven</span><span class="tag">Azure Devops</span>
+        </div>
+        <a href="#">Explore the Repo &rarr;</a>
+      </div>
+    </section>
+
+    <section>
+      <h2>Leadership Path & Impact</h2>
       
       <div class="card">
-        <div class="tag-container">
-          <span class="tag">Azure</span>
-          <span class="tag">Machine Learning</span>
-          <span class="tag">Python</span>
-          <span class="tag">Leadership</span>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+          <div>
+            <div class="tag">Current Role</div>
+            <h3 style="margin-top:0.5rem;">Senior Engineering Manager, Allstate</h3>
+          </div>
+          <span style="color: var(--muted); font-size: 0.9rem; font-weight: 600;">202X — Present</span>
         </div>
-        <h3>Financial Analytics & ML Platform</h3>
-        <p>Strategic leadership for Allstate Finance's ML initiative.</p>
+        <p style="margin-bottom: 1rem; font-style: italic;">Focus: Financial Analytics & ML Platforms</p>
         <ul>
-          <li>Directed a cross-functional team delivering ML models and analytics used by stakeholders.</li>
-          <li>Orchestrated the transition to Azure-based ML solutions, improving model deployment reliability.</li>
-          <li>Partnered with Finance and Product leaders to translate fiscal requirements into robust technical roadmaps.</li>
-          <li>Mentored senior engineers into lead roles, fostering a culture of architectural ownership.</li>
+          <li><strong>Domain Leadership:</strong> Driving the technical roadmap for ML platforms that serve as the backbone for financial reporting and agent insights.</li>
+          <li><strong>Cross-Functional Influence:</strong> Collaborating with Finance and Product VPs to align engineering capacity with high-ROI business outcomes.</li>
+          <li><strong>Operational Scale:</strong> Led the transition to unified cloud-native ML pipelines on Azure.</li>
         </ul>
       </div>
 
       <div class="card">
-        <div class="tag-container">
-          <span class="tag">Java / Spring Boot</span>
-          <span class="tag">React</span>
-          <span class="tag">GenAI</span>
-          <span class="tag">Integration</span>
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+          <div>
+            <div class="tag" style="background: rgba(148, 163, 184, 0.1); color: var(--muted);">Previous Initiative</div>
+            <h3 style="margin-top:0.5rem;">Engineering Lead, MyAssistant AI</h3>
+          </div>
+          <span style="color: var(--muted); font-size: 0.9rem; font-weight: 600;">[Year] — [Year]</span>
         </div>
-        <h3>MyAssistant — AI HR Platform</h3>
-        <p>Automating enterprise workflows through agentic AI.</p>
+        <p style="margin-bottom: 1rem; font-style: italic;">Focus: Enterprise GenAI & Workflow Automation</p>
         <ul>
-          <li>Led the architectural design of an AI assistant capable of executing complex tasks like PTO booking via Workday.</li>
-          <li>Integrated Microsoft Graph API and Workday to streamline employee support, reducing manual HR tickets by <strong>[X]%</strong>.</li>
-          <li>Built a scalable backend using Java and Python to handle concurrent enterprise-level traffic.</li>
-          <li>Championed the UX integration of AI tools to ensure high user adoption and trust.</li>
+          <li><strong>System Architecture:</strong> Designed a "Do-it-for-me" HR system, integrating Workday and MS Graph APIs into a centralized AI assistant.</li>
+          <li><strong>Execution:</strong> Built the core backend services (Java/Python) and established the initial engineering standards for AI safety and data governance within the tool.</li>
         </ul>
       </div>
     </section>
 
     <section>
-      <h2>Leadership Philosophy</h2>
-      <div class="philosophy-grid">
+      <h2>Organizational Focus</h2>
+      <div class="grid">
         <div class="card">
-          <h3 style="font-size: 1rem; color: var(--accent);">People First</h3>
-          <p style="font-size: 0.9rem;">I believe in radical candor and clear ownership. My job is to remove roadblocks and empower engineers to do the best work of their lives.</p>
+          <h3 style="font-size: 1rem; color: var(--accent);">People Multiplier</h3>
+          <p style="font-size: 0.9rem; color: var(--muted);">I measure success by the autonomy of my teams. I've successfully mentored several engineers into Lead and Senior roles.</p>
         </div>
         <div class="card">
-          <h3 style="font-size: 1rem; color: var(--accent);">Pragmatic Tech</h3>
-          <p style="font-size: 0.9rem;">I favor "boring" technology for critical systems. Innovation should be targeted where it provides the highest competitive advantage.</p>
+          <h3 style="font-size: 1rem; color: var(--accent);">Operational Excellence</h3>
+          <p style="font-size: 0.9rem; color: var(--muted);">Focus on "Paved Paths" for developers—reducing friction through better platform tooling and clear ADR processes.</p>
         </div>
-      </div>
-    </section>
-
-    <section>
-      <h2>Insights</h2>
-      <div class="card">
-        <ul>
-          <li>
-            <strong>From Prototype to Production: Shipping Trusted ML</strong><br/>
-            <small>Why monitoring and ownership matter more than model accuracy in a production environment.</small>
-          </li>
-          <li>
-            <strong>Building Agentic AI for Business</strong><br/>
-            <small>How to integrate AI into existing workflows without disrupting predictable business behaviors.</small>
-          </li>
-          <li>
-            <strong>The Engineer to Manager Transition</strong><br/>
-            <small>Lessons on scaling impact through others rather than through individual output.</small>
-          </li>
-        </ul>
       </div>
     </section>
 
     <section>
       <h2>Connect</h2>
-      <div class="card" style="display: flex; gap: 2rem; justify-content: center;">
-        <a href="https://www.linkedin.com/in/deniz-cingoez">LinkedIn</a> 
-        <a href="#">GitHub</a> 
+      <div class="card" style="text-align: center;">
+        <a href="https://www.linkedin.com/in/deniz-cingoez">LinkedIn</a> &nbsp; | &nbsp; 
         <a href="mailto:dcingoez@yahoo.com">Email</a>
       </div>
     </section>
 
-    <footer>
-      &copy; 2026 Deniz &mdash; Engineering Leadership Portfolio
+    <footer style="color: var(--muted); font-size: 0.8rem; text-align: center;">
+      © 2026 Deniz — Engineering Leadership Portfolio
     </footer>
-
   </div>
 </body>
 </html>
