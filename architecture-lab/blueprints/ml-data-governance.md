@@ -1,3 +1,14 @@
+# Engineering Leadership & Architecture Lab
+
+This repository serves as a living handbook for my technical leadership philosophy, organizational design strategies, and production-grade architecture blueprints.
+
+---
+
+## 🏗️ Blueprint 01: Standardized Financial ML Platform
+**Objective:** Create a repeatable, auditable, and cost-efficient path for moving ML models from finance data sources to production inference.
+
+### Architectural Diagram
+```mermaid
 flowchart LR
     subgraph Finance_Data_Sources["Finance & Enterprise Data Sources"]
         A1[Policy Systems]
@@ -34,30 +45,20 @@ flowchart LR
         F2[Auto-Shutdown After Training]
     end
 
-    %% Data Flow
     A1 --> B1
     A2 --> B1
     A3 --> B1
-
     B1 --> B2
     B2 --> B3
-
-    %% Separation of Concerns
     B3 -->|Features| C1
     C1 --> C2
     C1 --> C3
-
-    %% Governance & Auditability
     C2 --> D1
     C3 --> D1
     D1 --> D2
     D1 --> D3
-
-    %% Promotion to Production
     D2 -->|Approved Model| E1
     E1 --> E2
     E1 --> E3
-
-    %% Cost Control
     C1 --> F1
     C1 --> F2
