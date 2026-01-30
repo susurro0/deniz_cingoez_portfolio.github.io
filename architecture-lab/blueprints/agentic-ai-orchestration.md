@@ -28,10 +28,10 @@ flowchart LR
 
     subgraph Orchestration_Layer["Agentic Orchestration Layer"]
         IC[Intent Classifier]
-        PL[Task Planner (LLM)]
+        PL[Task Planner - LLM]
         PE[Policy & Permission Engine]
         EX[Execution Orchestrator]
-        ST[State & Event Store]
+        ST[(State & Event Store)]
     end
 
     subgraph Enterprise_Adapters["Enterprise System Adapters"]
@@ -46,30 +46,32 @@ flowchart LR
 
     subgraph Governance["Governance & Audit"]
         AL[Audit Logs]
-        RB[Rollback & Failure Handling]
+        RB[Rollback & Recovery]
     end
 
-    %% User Flow
+    %% User Flow & Planning
     UI --> IC
     IC --> PL
-    PL -->|Proposed Plan| PE
-    PE -->|Approved Steps| EX
+    ST <-->|Context Retrieval| PL
+    PL -->|Proposed Plan| UI
+    UI -->|User Approval| PE
+    PE -->|Authorized Steps| EX
 
     %% Execution Flow
-    EX -->|Invoke| WD
-    EX -->|Invoke| MG
-
+    EX -->|Action| WD
+    EX -->|Action| MG
     WD --> WDS
     MG --> MGS
 
-    %% Observability & Safety
-    EX --> ST
+    %% Observability & Safety Loop
+    EX -.->|Event Stream| ST
     ST --> AL
-    EX --> RB
+    EX -->|Failure Detected| RB
+    RB -->|Cleanup/Revert| EX
+    RB -->|Failure Alert| UI
 
     %% Feedback Loop
-    EX -->|Status & Confirmation| UI
-
+    EX -->|Success Confirmation| UI
 ```
 
 ---
