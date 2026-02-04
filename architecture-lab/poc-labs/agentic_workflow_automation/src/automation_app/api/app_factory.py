@@ -39,3 +39,5 @@ class AppFactory:
 
     def get_app(self) -> FastAPI:
         return self.app
+
+app = AppFactory().get_app()

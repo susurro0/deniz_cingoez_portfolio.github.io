@@ -22,3 +22,28 @@ class OrchestratorRoutes:
                 session_id=req.session_id
             )
             return {"message": result}
+
+        @self.router.post("/propose", response_model=OrchestratorResponse)
+        def propose(req: OrchestratorRequest):
+            result = self.orchestrator.propose(req.text, req.session_id)
+            return {
+                "message": result["message"],
+                "state": result["state"],
+                "plan": result.get("plan")
+            }
+
+        @self.router.post("/confirm", response_model=OrchestratorResponse)
+        def confirm(req: OrchestratorRequest):
+            result = self.orchestrator.confirm(req.session_id)
+            return {
+                "message": result["message"],
+                "state": result["state"]
+            }
+
+        @self.router.post("/reject", response_model=OrchestratorResponse)
+        def reject(req: OrchestratorRequest):
+            result = self.orchestrator.reject(req.session_id)
+            return {
+                "message": result["message"],
+                "state": result["state"]
+            }

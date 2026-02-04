@@ -37,7 +37,7 @@ def test_process_route_calls_orchestrator_correctly():
         response = client.post("/process", json=payload)
 
         assert response.status_code == 200
-        assert response.json() == {"message": "OK"}
+        assert response.json() == {"message": "OK",  'plan': None, 'state': None }
 
         mock_orchestrator.process_request.assert_called_once_with(
             user_input="Book PTO for Friday",
