@@ -1,0 +1,8 @@
+# requirements.txt
+pydantic        # for structured data models
+openai          # LLM client (optional if using OpenAI for planning)
+python-dotenv   # manage environment variables
+pytest
+pytest-cov
+fastapi
+uvicorn

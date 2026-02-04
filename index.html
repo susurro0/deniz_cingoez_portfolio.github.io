@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Deniz Cingoez — Engineering Leadership</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --border: #334155;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      line-height: 1.6; 
+    }
+
+    .container { max-width: 850px; margin: 0 auto; padding: 5rem 1.5rem; }
+    
+    header { margin-bottom: 4rem; text-align: center; }
+    header h1 { font-size: 3rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
+    header p { color: var(--muted); font-size: 1.2rem; max-width: 700px; margin: 0 auto; }
+
+    section { margin-bottom: 5rem; }
+    h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 2rem; color: var(--accent); display: flex; align-items: center; }
+    h2::after { content: ""; height: 1px; flex-grow: 1; background: var(--border); margin-left: 1rem; }
+
+    .card { 
+      background: var(--card); 
+      padding: 2rem; 
+      border-radius: 12px; 
+      margin-bottom: 1.5rem; 
+      border: 1px solid var(--border); 
+      transition: 0.3s; 
+    }
+    .card:hover { 
+      border-color: var(--accent); 
+      transform: translateY(-2px); 
+    }
+    .card h3 { margin-bottom: 0.75rem; font-size: 1.3rem; }
+    .tag { 
+      font-size: 0.7rem; 
+      background: rgba(56, 189, 248, 0.1); 
+      color: var(--accent); 
+      padding: 0.2rem 0.5rem; 
+      border-radius: 4px; 
+      margin-right: 0.5rem; 
+      font-weight: 700; 
+    }
+
+    ul { padding-left: 1.2rem; margin-top: 1rem; }
+    li { margin-bottom: 0.5rem; color: var(--text); }
+
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+
+    a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    a:hover { text-decoration: underline; }
+
+    @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+
+    /* Subtle improvements for cards with emphasis */
+    .card-flag { border-left: 4px solid var(--accent); padding-left: 1.5rem; }
+    .muted-tag { background: rgba(148, 163, 184, 0.1); color: var(--muted); }
+
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Deniz Cingoez</h1>
+      <p>Senior Engineering Manager | Scaling AI/ML Platforms & High-Performance Teams</p>
+    </header>
+
+    <section>
+      <h2>Strategic Overview</h2>
+      <div class="card">
+        <p>
+          I lead multi-disciplinary teams at <strong>Allstate</strong>, specializing in the architecture and delivery of ML-driven financial analytics. I focus on bridging the gap between high-level business strategy and technical execution—designing systems that are scalable, sustainable, and auditable.
+        </p>
+      </div>
+    </section>
+
+    <section>
+      <h2>Platform Architecture & Innovation Lab</h2>
+      <div class="card card-flag">
+        <h3>The Engineering Leadership Handbook</h3>
+        <p>A repository of production-grade blueprints and organizational strategies for scaling ML engineering.</p>
+        <div style="margin: 1rem 0;">
+          <span class="tag">System Design</span>
+          <span class="tag">Org Dynamics</span>
+          <span class="tag">MLOps Governance</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-top: 1.5rem;">
+          <div>
+            <strong style="font-size: 0.9rem; color: var(--muted); display: block; margin-bottom: 0.25rem;">Blueprints</strong>
+            <a href="https://github.com/susurro0/deniz_cingoez_portfolio.github.io/blob/main/architecture-lab/blueprints/ml-data-governance.md">View Blueprints &rarr;</a>
+            <a href="https://github.com/susurro0/deniz_cingoez_portfolio.github.io/blob/main/architecture-lab/blueprints/organization.md">Operating Model &rarr;</a>
+            <a href="https://github.com/susurro0/deniz_cingoez_portfolio.github.io/blob/main/architecture-lab/blueprints/agentic-ai-orchestration.md">Agentic AI &rarr;</a>
+          </div>
+          <div style="margin-top: 0.5rem;">
+              <strong style="font-size: 0.9rem; color: var(--muted); display: block; margin-bottom: 0.25rem;">Management Standards</strong>
+              <a href="https://github.com/susurro0/deniz_cingoez_portfolio.github.io/blob/main/architecture-lab/standards/engineering-rubric.md" style="margin-right: 1rem;">Engineering Rubric &rarr;</a>
+              <a href="https://github.com/susurro0/deniz_cingoez_portfolio.github.io/blob/main/architecture-lab/standards/architecture-decision-record-template.md">ADR Framework &rarr;</a>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <section>
+      <h2>Leadership Path & Impact</h2>
+      
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+          <div><div class="tag">Current Role</div></div>
+        </div>
+        <p style="margin-bottom: 1rem; font-style: italic;">Focus: Financial Analytics & AI/ML Platforms</p>
+        <ul>
+          <li><strong>Domain Leadership:</strong> Driving the technical roadmap for ML platforms supporting financial reporting and agent insights.</li>
+          <li><strong>Cross-Functional Influence:</strong> Partnering with Finance and Product VPs to align engineering capacity with high-ROI outcomes.</li>
+          <li><strong>Operational Scale:</strong> Led transition to unified cloud-native ML pipelines on Azure.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap;">
+          <div><div class="tag muted-tag">Previous Initiative</div></div>
+        </div>
+        <p style="margin-bottom: 1rem; font-style: italic;">Focus: Enterprise GenAI & Workflow Automation</p>
+        <ul>
+          <li><strong>System Architecture:</strong> Designed a "Do-it-for-me" HR system integrating Workday & MS Graph APIs into a centralized AI assistant.</li>
+          <li><strong>Execution:</strong> Built core backend services (Java/Python) and established engineering standards for AI safety & data governance.</li>
+        </ul>
+      </div>
+
+    </section>
+    <section id="poc-lab">
+  <h2>POC Lab: Technical Proof of Work</h2>
+  <p style="color: var(--muted); margin-bottom: 2rem;">
+    Hands-on implementations of the architecture blueprints, focusing on scalability, security, and developer experience.
+  </p>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem;">
+
+    <div class="card">
+      <div class="tag" style="background: rgba(99, 102, 241, 0.1); color: #6366f1;">Active Project</div>
+      <h3>Agentic Workflow Automation</h3>
+      <p>Python implementation of a Task Planner with Human-in-the-Loop (HITL) gates for Enterprise HR systems.</p>
+      <div style="margin-top: 1rem;">
+        <span class="tag">Python</span>
+        <span class="tag">LLM Orchestration</span>
+        <span class="tag">State Management</span>
+      </div>
+      <a href="https://github.com/susurro0/deniz_cingoez_portfolio.github.io/tree/main/architecture-lab/poc-labs/agentic_workflow_automation" style="display: block; margin-top: 1.5rem;">View Source & Documentation &rarr;</a>
+    </div>
+
+    <div class="card">
+      <div class="tag">Coming Soon</div>
+      <h3>Model Governance Validator</h3>
+      <p>Automated CLI tool to enforce "Definition of Ready" standards and metadata lineage for ML models.</p>
+      <div style="margin-top: 1rem;">
+        <span class="tag">Quality Gates</span>
+        <span class="tag">CI/CD</span>
+        <span class="tag">Compliance</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tag">Coming Soon</div>
+      <h3>FinOps: Intelligent LLM Router</h3>
+      <p>A proxy layer to optimize token costs by routing queries between high-reasoning and lightweight models.</p>
+      <div style="margin-top: 1rem;">
+        <span class="tag">Cost Control</span>
+        <span class="tag">Performance</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tag">Coming Soon</div>
+      <h3>AI Guardrails & Observability</h3>
+      <p>Middleware for PII filtering and hallucination detection in production LLM responses.</p>
+      <div style="margin-top: 1rem;">
+        <span class="tag">Security</span>
+        <span class="tag">Safety</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="tag">Coming Soon</div>
+      <h3>Standardized ML Bootstrapper</h3>
+      <p>Infrastructure-as-Code templates for rapidly deploying unified ML environments on Azure.</p>
+      <div style="margin-top: 1rem;">
+        <span class="tag">Terraform</span>
+        <span class="tag">DevEx</span>
+      </div>
+    </div>
+
+  </div>
+</section>
+   <section>
+  <h2>Organizational Focus</h2>
+  <div class="grid">
+    <div class="card">
+      <h3 style="font-size: 1rem; color: var(--accent);">People Multiplier</h3>
+      <p style="font-size: 0.9rem; color: var(--muted);">I measure success by the autonomy of my teams. Mentored engineers into Lead and Senior roles successfully.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-size: 1rem; color: var(--accent);">Operational Excellence</h3>
+      <p style="font-size: 0.9rem; color: var(--muted);">Focus on "Paved Paths"—reducing friction through platform tooling and clear ADR processes.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-size: 1rem; color: var(--accent);">Innovation & Platform Strategy</h3>
+      <p style="font-size: 0.9rem; color: var(--muted);">Lead design of scalable, cloud-native ML platforms with strategic alignment to enterprise goals.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-size: 1rem; color: var(--accent);">Data & AI Governance</h3>
+      <p style="font-size: 0.9rem; color: var(--muted);">Ensure data quality, AI safety, and compliance standards are embedded into platform engineering practices.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-size: 1rem; color: var(--accent);">Cross-Functional Collaboration</h3>
+      <p style="font-size: 0.9rem; color: var(--muted);">Partner with Finance, Product, and Ops leaders to align engineering efforts with high-impact business outcomes.</p>
+    </div>
+  </div>
+</section>
+
+
+    <section>
+      <h2>Connect</h2>
+      <div class="card" style="text-align: center;">
+        <a href="https://www.linkedin.com/in/deniz-cingoez">LinkedIn</a> &nbsp; | &nbsp; 
+        <a href="mailto:dcingoez@yahoo.com">Email</a>
+      </div>
+    </section>
+
+    <footer style="color: var(--muted); font-size: 0.8rem; text-align: center; margin-top: 3rem;">
+      © 2026 Deniz Cingoez — Engineering Leadership Portfolio
+    </footer>
+  </div>
+</body>
+</html>

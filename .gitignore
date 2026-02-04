@@ -1,0 +1,22 @@
+.idea
+.DS_Store
+
+__pyache__/
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+
+# Environments
+venv/
+env/
+.env
