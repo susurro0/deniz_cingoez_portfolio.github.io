@@ -1,28 +1,85 @@
 import pytest
+from unittest.mock import patch
+
 from automation_app.adapters.workday_adapter import WorkdayAdapter
 
 
-def test_workday_execute_book_time_off_success():
-    # Arrange
+# ---------------------------------------------------------------------------
+# execute()
+# ---------------------------------------------------------------------------
+
+def test_execute_create_time_off_calls_method():
     adapter = WorkdayAdapter()
-    action = "book_time_off"
-    params = {"days": 2, "start_date": "2024-01-01"}
 
-    # Act
-    result = adapter.execute(action, params)
+    with patch.object(adapter, "create_time_off", return_value={"request_id": "WD999"}) as mock_create:
+        result = adapter.execute("create_time_off", {"days": 1})
 
-    # Assert
-    assert result["status"] == "success"
-    assert result["reference"] == "WD-123"
+        mock_create.assert_called_once_with({"days": 1})
+        assert result == {"request_id": "WD999"}
 
 
-def test_workday_execute_invalid_action_raises_error():
-    # Arrange
+def test_execute_unsupported_action_raises():
     adapter = WorkdayAdapter()
-    invalid_action = "order_pizza"
 
-    # Act & Assert
-    with pytest.raises(ValueError) as excinfo:
-        adapter.execute(invalid_action, {})
+    with pytest.raises(ValueError) as exc:
+        adapter.execute("unknown_action", {})
 
-    assert "Unknown Workday action" in str(excinfo.value)
+    assert "Unsupported action" in str(exc.value)
+
+
+# ---------------------------------------------------------------------------
+# compensate()
+# ---------------------------------------------------------------------------
+
+def test_compensate_calls_cancel_time_off_when_request_id_present():
+    adapter = WorkdayAdapter()
+
+    with patch.object(adapter, "cancel_time_off") as mock_cancel:
+        adapter.compensate("create_time_off", {"days": 1}, {"request_id": "WD123"})
+
+        mock_cancel.assert_called_once_with("WD123")
+
+
+def test_compensate_does_nothing_when_request_id_missing():
+    adapter = WorkdayAdapter()
+
+    with patch.object(adapter, "cancel_time_off") as mock_cancel:
+        adapter.compensate("create_time_off", {"days": 1}, {})
+
+        mock_cancel.assert_not_called()
+
+
+def test_compensate_ignores_unknown_action():
+    adapter = WorkdayAdapter()
+
+    with patch.object(adapter, "cancel_time_off") as mock_cancel:
+        adapter.compensate("weird_action", {}, {"request_id": "WD123"})
+
+        mock_cancel.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# supported_actions()
+# ---------------------------------------------------------------------------
+
+def test_supported_actions():
+    adapter = WorkdayAdapter()
+    assert adapter.supported_actions() == {"create_time_off"}
+
+
+# ---------------------------------------------------------------------------
+# concrete methods
+# ---------------------------------------------------------------------------
+
+def test_create_time_off_returns_request_id():
+    adapter = WorkdayAdapter()
+    result = adapter.create_time_off({"days": 2})
+
+    assert result == {"request_id": "WD123"}
+
+
+def test_cancel_time_off_is_idempotent():
+    adapter = WorkdayAdapter()
+
+    # Should not raise
+    adapter.cancel_time_off("WD123")
