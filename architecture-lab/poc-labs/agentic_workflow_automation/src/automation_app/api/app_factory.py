@@ -11,6 +11,7 @@ from automation_app.engines.policy_engine import PolicyEngine
 from automation_app.engines.task_planner import TaskPlanner
 from automation_app.orchestrator import AgenticOrchestrator
 from automation_app.store.state_store import StateStore
+from automation_app.utils.pii_scrubber import PIIScrubber
 
 
 class AppFactory:
@@ -30,7 +31,8 @@ class AppFactory:
             planner=TaskPlanner(),
             policy_engine=PolicyEngine(),
             executor=ExecutionEngine(adapters),
-            state_store=StateStore()
+            state_store=StateStore(),
+            scrubber=PIIScrubber()
         )
 
     def _register_routes(self):

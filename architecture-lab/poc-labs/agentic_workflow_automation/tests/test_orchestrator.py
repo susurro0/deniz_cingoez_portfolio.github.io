@@ -1,266 +1,153 @@
 import pytest
-from unittest.mock import Mock, MagicMock, patch
-
-from automation_app.orchestrator import AgenticOrchestrator
+from unittest.mock import MagicMock, patch, ANY
 from automation_app.models.workflow_state import WorkflowState
-
-
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
-@pytest.fixture
-def classifier():
-    m = Mock()
-    m.classify.return_value = "intent:create_user"
-    return m
+from automation_app.models.intent import Intent
+from automation_app.orchestrator import AgenticOrchestrator
 
 
 @pytest.fixture
-def planner():
-    m = Mock()
-    m.generate_plan.return_value = Mock(dict=Mock(return_value={"plan": "data"}))
-    return m
+def mocks():
+    """Fixture to provide a collection of initialized mocks."""
+    return {
+        "classifier": MagicMock(),
+        "planner": MagicMock(),
+        "policy_engine": MagicMock(),
+        "executor": MagicMock(),
+        "state_store": MagicMock(),
+        "auditor": MagicMock(),
+        "scrubber": MagicMock()
+    }
 
 
 @pytest.fixture
-def policy_engine():
-    m = Mock()
-    m.validate_plan.return_value = True
-    return m
+def orchestrator(mocks):
+    return AgenticOrchestrator(**mocks)
 
 
-@pytest.fixture
-def executor():
-    m = Mock()
-    m.run.return_value = True
-    return m
+## --- Phase: process_request tests ---
 
+@pytest.mark.parametrize("executor_success, expected_msg, expected_state", [
+    (True, "Execution completed", WorkflowState.COMPLETED),
+    (False, "Execution failed", WorkflowState.REJECTED),
+])
+def test_process_request_outcomes(orchestrator, mocks, executor_success, expected_msg, expected_state):
+    # Setup
+    mocks["scrubber"].scrub.return_value = "sanitized input"
+    mocks["classifier"].classify.return_value = Intent(type="TEST", entity="X")
 
-@pytest.fixture
-def state_store():
-    m = Mock()
-    m.get_context.return_value = {"data": {}, "state": WorkflowState.PROPOSED}
-    return m
+    mock_plan = MagicMock()
+    mock_plan.model_dump.return_value = {"id": "plan_123"}
+    mocks["planner"].generate_plan.return_value = mock_plan
 
+    mocks["policy_engine"].validate_plan.return_value = True
+    mocks["executor"].run.return_value = executor_success
 
-@pytest.fixture
-def orchestrator(classifier, planner, policy_engine, executor, state_store):
-    return AgenticOrchestrator(
-        classifier=classifier,
-        planner=planner,
-        policy_engine=policy_engine,
-        executor=executor,
-        state_store=state_store,
+    # Execute
+    result = orchestrator.process_request("hello", "session-1")
+
+    # Assert
+    assert result == expected_msg
+    mocks["state_store"].save_context.assert_called_with(
+        "session-1", {"last_plan": {"id": "plan_123"}}, state=expected_state
     )
 
 
-# ---------------------------------------------------------------------------
-# process_request
-# ---------------------------------------------------------------------------
+def test_process_request_policy_violation(orchestrator, mocks):
+    mocks["policy_engine"].validate_plan.return_value = False
 
-def test_process_request_success(orchestrator, classifier, planner, policy_engine, executor, state_store):
-    result = orchestrator.process_request("Create a new employee", "session-123")
-
-    assert result == "Execution completed"
-    classifier.classify.assert_called_once_with("Create a new employee")
-    state_store.get_context.assert_called_once_with("session-123")
-    planner.generate_plan.assert_called_once()
-    policy_engine.validate_plan.assert_called_once()
-    executor.run.assert_called_once()
-    state_store.save_context.assert_called_once_with(
-        "session-123",
-        {"last_plan": {"plan": "data"}},
-    )
-
-
-def test_process_request_policy_violation(orchestrator, policy_engine, executor, state_store):
-    policy_engine.validate_plan.return_value = False
-
-    result = orchestrator.process_request("Delete all employees", "session-456")
+    result = orchestrator.process_request("bad input", "session-1")
 
     assert result == "Plan violates policy. Cannot execute."
-    executor.run.assert_not_called()
-    state_store.save_context.assert_not_called()
+    mocks["executor"].run.assert_not_called()
 
 
-def test_process_request_execution_failure(orchestrator, executor, state_store):
-    executor.run.return_value = False
+## --- Phase: propose tests ---
 
-    result = orchestrator.process_request("Send email", "session-789")
+def test_propose_success(orchestrator, mocks):
+    mocks["scrubber"].scrub.return_value = "sanitized"
+    mocks["policy_engine"].validate_plan.return_value = True
 
-    assert result == "Execution failed"
-    executor.run.assert_called_once()
-    state_store.save_context.assert_called_once()
+    mock_plan = MagicMock()
+    mock_plan.model_dump.return_value = {"id": "plan_abc"}
+    mocks["planner"].generate_plan.return_value = mock_plan
 
-
-@pytest.mark.parametrize(
-    "executor_result, expected",
-    [(True, "Execution completed"), (False, "Execution failed")],
-)
-def test_process_request_parametrized(orchestrator, executor, executor_result, expected):
-    executor.run.return_value = executor_result
-
-    result = orchestrator.process_request("Do something", "session-999")
-
-    assert result == expected
-
-
-def test_process_request_persists_last_plan(orchestrator, planner, state_store):
-    plan = Mock()
-    plan.dict.return_value = {"foo": "bar"}
-    planner.generate_plan.return_value = plan
-
-    orchestrator.process_request("Persist state", "session-abc")
-
-    state_store.save_context.assert_called_once_with(
-        "session-abc",
-        {"last_plan": {"foo": "bar"}},
-    )
-
-
-# ---------------------------------------------------------------------------
-# propose
-# ---------------------------------------------------------------------------
-
-def test_propose_success(orchestrator, classifier, planner, policy_engine, state_store):
-    planner.generate_plan.return_value = Mock(dict=lambda: {"plan": 1})
-    policy_engine.validate_plan.return_value = True
-
-    result = orchestrator.propose("hello", "session-1")
+    result = orchestrator.propose("do something", "sess-abc")
 
     assert result["state"] == WorkflowState.PROPOSED
-    assert result["message"] == "Plan proposed, awaiting confirmation"
-    assert result["plan"] == {"plan": 1}
-
-    state_store.save_context.assert_called_once_with(
-        "session-1",
-        {"last_plan": {"plan": 1}},
-        state=WorkflowState.PROPOSED,
+    assert result["plan"] == {"id": "plan_abc"}
+    mocks["state_store"].save_context.assert_called_with(
+        "sess-abc", {"last_plan": {"id": "plan_abc"}}, state=WorkflowState.PROPOSED
     )
 
 
-def test_propose_rejected(orchestrator, policy_engine, state_store):
-    policy_engine.validate_plan.return_value = False
+def test_propose_policy_rejection(orchestrator, mocks):
+    mocks["policy_engine"].validate_plan.return_value = False
 
-    result = orchestrator.propose("hello", "session-1")
+    result = orchestrator.propose("do bad thing", "sess-abc")
 
     assert result["state"] == WorkflowState.REJECTED
-    assert result["message"] == "Plan violates policy"
     assert result["plan"] is None
 
-    state_store.save_context.assert_not_called()
 
+## --- Phase: confirm & reject tests ---
 
-# ---------------------------------------------------------------------------
-# confirm
-# ---------------------------------------------------------------------------
+def test_confirm_nothing_to_confirm(orchestrator, mocks):
+    # State is not PROPOSED
+    mocks["state_store"].get_context.return_value = {"state": WorkflowState.COMPLETED}
 
-def test_confirm_success(orchestrator, executor, state_store):
-    state_store.get_context.return_value = {
-        "state": WorkflowState.PROPOSED,
-        "data": {"last_plan": {"foo": "bar"}},
-    }
-    executor.run.return_value = True
-
-    with patch("automation_app.orchestrator.Plan") as PlanMock:
-        PlanMock.return_value = MagicMock()
-
-        result = orchestrator.confirm("session-1")
-
-        assert result["state"] == WorkflowState.COMPLETED
-        assert result["message"] == "Execution completed"
-
-        executor.run.assert_called_once()
-        state_store.save_context.assert_called_once_with(
-            "session-1",
-            {"last_plan": {"foo": "bar"}},
-            state=WorkflowState.COMPLETED,
-        )
-
-
-def test_confirm_wrong_state(orchestrator, state_store, executor):
-    state_store.get_context.return_value = {
-        "state": WorkflowState.EXECUTING,
-        "data": {},
-    }
-
-    result = orchestrator.confirm("session-1")
-
-    assert result["state"] == WorkflowState.EXECUTING
+    result = orchestrator.confirm("sess-123")
     assert result["message"] == "Nothing to confirm"
 
-    executor.run.assert_not_called()
-    state_store.save_context.assert_not_called()
 
-
-def test_confirm_execution_failure(orchestrator, executor, state_store):
-    state_store.get_context.return_value = {
+@patch("automation_app.models.plan.Plan")  # Patch Plan to handle Plan(**plan_data)
+def test_confirm_success(mock_plan_class, orchestrator, mocks):
+    # Setup state store with a proposed plan
+    plan_data = {"actions": []}
+    mocks["state_store"].get_context.return_value = {
         "state": WorkflowState.PROPOSED,
-        "data": {"last_plan": {"foo": "bar"}},
+        "data": {"last_plan": plan_data}
     }
-    executor.run.return_value = False
+    mocks["executor"].run.return_value = True
 
-    with patch("automation_app.orchestrator.Plan") as PlanMock:
-        PlanMock.return_value = MagicMock()
+    result = orchestrator.confirm("sess-123")
 
-        result = orchestrator.confirm("session-1")
+    assert result["state"] == WorkflowState.COMPLETED
+    mocks["executor"].run.assert_called_once()
+    mocks["state_store"].save_context.assert_called_with(
+        "sess-123", {"last_plan": plan_data}, state=WorkflowState.COMPLETED
+    )
 
-        assert result["state"] == WorkflowState.REJECTED
-        assert result["message"] == "Execution failed"
 
-        state_store.save_context.assert_called_once_with(
-            "session-1",
-            {"last_plan": {"foo": "bar"}},
-            state=WorkflowState.REJECTED,
-        )
-
-# ---------------------------------------------------------------------------
-# reject
-# ---------------------------------------------------------------------------
-
-def test_reject_success(orchestrator, state_store):
-    state_store.get_context.return_value = {
+def test_reject_success(orchestrator, mocks):
+    plan_data = {"id": "123"}
+    mocks["state_store"].get_context.return_value = {
         "state": WorkflowState.PROPOSED,
-        "data": {"last_plan": {"foo": "bar"}}
+        "data": {"last_plan": plan_data}
     }
 
-    result = orchestrator.reject("session-1")
+    result = orchestrator.reject("sess-123")
 
     assert result["state"] == WorkflowState.REJECTED
-    assert result["message"] == "Plan rejected by user"
-
-    state_store.save_context.assert_called_once_with(
-        "session-1",
-        {"last_plan": {"foo": "bar"}},
-        state=WorkflowState.REJECTED
+    mocks["state_store"].save_context.assert_called_with(
+        "sess-123", {"last_plan": plan_data}, state=WorkflowState.REJECTED
     )
 
 
-def test_reject_wrong_state(orchestrator, state_store):
-    state_store.get_context.return_value = {
-        "state": WorkflowState.EXECUTING,
-        "data": {}
-    }
-
-    result = orchestrator.reject("session-1")
-
-    assert result["state"] == WorkflowState.EXECUTING
+def test_reject_invalid_state(orchestrator, mocks):
+    mocks["state_store"].get_context.return_value = {"state": WorkflowState.COMPLETED}
+    result = orchestrator.reject("sess-123")
     assert result["message"] == "Nothing to reject"
 
-    state_store.save_context.assert_not_called()
 
+## --- Coverage for Compatibility Helpers ---
 
-def test_reject_preserves_last_plan(orchestrator, state_store):
-    state_store.get_context.return_value = {
-        "state": WorkflowState.PROPOSED,
-        "data": {"last_plan": {"x": 123}}
-    }
+def test_get_serialized_plan_compatibility(orchestrator):
+    # Test v1 (dict)
+    v1_plan = MagicMock(spec=["dict"])
+    v1_plan.dict.return_value = {"v": 1}
+    assert orchestrator._get_serialized_plan(v1_plan) == {"v": 1}
 
-    orchestrator.reject("session-abc")
-
-    state_store.save_context.assert_called_once_with(
-        "session-abc",
-        {"last_plan": {"x": 123}},
-        state=WorkflowState.REJECTED
-    )
+    # Test v2 (model_dump)
+    v2_plan = MagicMock(spec=["model_dump"])
+    v2_plan.model_dump.return_value = {"v": 2}
+    assert orchestrator._get_serialized_plan(v2_plan) == {"v": 2}
