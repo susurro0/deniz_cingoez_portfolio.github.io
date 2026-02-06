@@ -5,13 +5,13 @@ class StateStore:
     def __init__(self):
         self.storage = {}
 
-    def save_context(self, session_id: str, data: dict, state: WorkflowState = WorkflowState.PROPOSED):
+    async def save_context(self, session_id: str, data: dict, state: WorkflowState = WorkflowState.PROPOSED):
         self.storage[session_id] = {
             "state": state,
             "data": data
         }
 
-    def get_context(self, session_id: str) -> dict:
+    async def get_context(self, session_id: str) -> dict:
         return self.storage.get(session_id, {
             "state": WorkflowState.PROPOSED,
             "data": {}

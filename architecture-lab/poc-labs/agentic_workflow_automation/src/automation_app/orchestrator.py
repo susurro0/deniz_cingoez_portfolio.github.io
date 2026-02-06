@@ -38,7 +38,7 @@ class AgenticOrchestrator:
         sanitized_input = self.scrubber.scrub(user_input)
 
         # Assuming Auditor.log is now an async method
-        await self.auditor.log(
+        self.auditor.log(
             session_id,
             "REQUEST_RECEIVED",
             {
@@ -50,7 +50,7 @@ class AgenticOrchestrator:
 
         # Phase 1: Understanding
         intent: Intent = await self.classifier.classify(user_input)
-        await self.auditor.log(
+        self.auditor.log(
             session_id,
             "INTENT_CLASSIFIED",
             {
@@ -64,7 +64,7 @@ class AgenticOrchestrator:
         # Phase 2: Reasoning
         context = await self.state_store.get_context(session_id)
         plan = await self.planner.generate_plan(intent, context)
-        await self.auditor.log_plan(session_id, plan)
+        self.auditor.log_plan(session_id, plan)
 
         # Phase 3: Validation
         if not await self.policy_engine.validate_plan(plan):
@@ -78,10 +78,10 @@ class AgenticOrchestrator:
 
     async def propose(self, user_input: str, session_id: str):
         sanitized_input = self.scrubber.scrub(user_input)
-        await self.auditor.log(session_id, "REQUEST_RECEIVED", {"entrypoint": "propose", "input": sanitized_input})
+        self.auditor.log(session_id, "REQUEST_RECEIVED", {"entrypoint": "propose", "input": sanitized_input})
 
         intent = await self.classifier.classify(user_input)
-        await self.auditor.log(
+        self.auditor.log(
             session_id,
             "INTENT_CLASSIFIED",
             {
@@ -93,7 +93,7 @@ class AgenticOrchestrator:
 
         context = await self.state_store.get_context(session_id)
         plan = await self.planner.generate_plan(intent, context.get("data", {}))
-        await self.auditor.log_plan(session_id, plan)
+        self.auditor.log_plan(session_id, plan)
 
         if not await self.policy_engine.validate_plan(plan):
             return {"state": WorkflowState.REJECTED, "message": "Plan violates policy", "plan": None}
@@ -104,7 +104,7 @@ class AgenticOrchestrator:
         return {"state": WorkflowState.PROPOSED, "message": "Plan proposed, awaiting confirmation", "plan": plan_data}
 
     async def confirm(self, session_id: str):
-        await self.auditor.log(session_id, "REQUEST_RECEIVED", {"entrypoint": "confirm"})
+        self.auditor.log(session_id, "REQUEST_RECEIVED", {"entrypoint": "confirm"})
 
         context = await self.state_store.get_context(session_id)
         current_state = context.get("state")
@@ -120,7 +120,7 @@ class AgenticOrchestrator:
         return {"state": WorkflowState.PROPOSED, "message": "Execution started in background"}
 
     async def reject(self, session_id: str):
-        await self.auditor.log(session_id, "REQUEST_RECEIVED", {"entrypoint": "reject"})
+        self.auditor.log(session_id, "REQUEST_RECEIVED", {"entrypoint": "reject"})
 
         context = await self.state_store.get_context(session_id)
         if context.get("state") != WorkflowState.PROPOSED:

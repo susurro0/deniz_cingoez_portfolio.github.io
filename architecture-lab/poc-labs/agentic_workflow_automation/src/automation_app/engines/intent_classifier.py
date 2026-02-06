@@ -2,7 +2,7 @@ from automation_app.models.intent import Intent
 
 
 class IntentClassifier:
-    def classify(self, text: str) -> Intent:
+    async def classify(self, text: str) -> Intent:
         text_lower = text.lower()
 
         if "pto" in text_lower or "time off" in text_lower:

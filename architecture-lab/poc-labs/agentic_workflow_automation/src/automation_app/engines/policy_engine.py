@@ -2,7 +2,7 @@ from automation_app.models.plan import Plan
 
 
 class PolicyEngine:
-    def validate_plan(self, plan: Plan) -> bool:
+    async def validate_plan(self, plan: Plan) -> bool:
         # Example: PTO must check calendar first
         if not plan.actions:
             return False
@@ -13,6 +13,6 @@ class PolicyEngine:
 
         return True
 
-    def check_permissions(self, user_id: str, action: str) -> bool:
+    async def check_permissions(self, user_id: str, action: str) -> bool:
         # Stub: allow everything
         return True

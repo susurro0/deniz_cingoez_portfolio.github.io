@@ -4,7 +4,7 @@ from automation_app.models.plan import Plan
 
 
 class TaskPlanner:
-    def generate_plan(self, intent: Intent, state: dict) -> Plan:
+    async def generate_plan(self, intent: Intent, state: dict) -> Plan:
         if intent.type == "PTO":
             return Plan(actions=[
                 Action(

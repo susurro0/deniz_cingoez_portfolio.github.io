@@ -2,33 +2,37 @@
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, AsyncMock
 
 from automation_app.api.routes.orchestrator_routes import OrchestratorRoutes
 from automation_app.models.workflow_state import WorkflowState
 
 
 def create_test_app():
-    orchestrator = MagicMock()
+    orchestrator = AsyncMock()
 
-    # Default mock return values
+    # Default async return values
     orchestrator.process_request.return_value = "Processed OK"
     orchestrator.propose.return_value = {
         "message": "Plan proposed",
-        "state": WorkflowState.PROPOSED,
+        "state": WorkflowState.PROPOSED.name,  # Serialize for JSON
         "plan": {"foo": "bar"}
     }
     orchestrator.confirm.return_value = {
         "message": "Execution completed",
-        "state": WorkflowState.COMPLETED
+        "state": WorkflowState.COMPLETED.name
+    }
+    orchestrator.reject.return_value = {
+        "message": "Plan rejected by user",
+        "state": WorkflowState.REJECTED.name
     }
 
     routes = OrchestratorRoutes(orchestrator)
-
     app = FastAPI()
     app.include_router(routes.router)
+    client = TestClient(app)  # <- wrap app in TestClient
 
-    return TestClient(app), orchestrator
+    return client, orchestrator
 
 
 # ---------------------------------------------------------------------------
@@ -36,18 +40,21 @@ def create_test_app():
 # ---------------------------------------------------------------------------
 
 def test_process_route_success():
-    client, orchestrator = create_test_app()
+    app, orchestrator = create_test_app()
 
     payload = {"session_id": "s1", "text": "Hello"}
 
-    response = client.post("/process", json=payload)
+    response = app.post("/process", json=payload)
 
     assert response.status_code == 200
-    assert response.json() == { "message": "Processed OK", "state": None, "plan": None }
-    orchestrator.process_request.assert_called_once_with(
+    assert response.json() == {"message": "Processed OK", 'plan': None, 'state': None}
+
+    orchestrator.process_request.assert_awaited_once_with(
         user_input="Hello",
-        session_id="s1"
+        session_id="s1",
+        user_id="anonymous"
     )
+
 
 
 def test_process_route_validation_error():

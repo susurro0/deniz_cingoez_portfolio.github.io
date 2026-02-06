@@ -1,5 +1,4 @@
-# automation_app/api/app_factory.py
-
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from automation_app.adapters.msgraph_adapter import MSGraphAdapter
@@ -16,11 +15,23 @@ from automation_app.utils.pii_scrubber import PIIScrubber
 
 class AppFactory:
     def __init__(self):
-        self.app = FastAPI(title="Agentic Workflow Orchestrator")
-        self._setup_dependencies()
-        self._register_routes()
+        # We define the lifespan to handle async setup/teardown
+        self.app = FastAPI(
+            title="Agentic Workflow Orchestrator",
+            lifespan=self.lifespan
+        )
+        self.orchestrator = None
 
-    def _setup_dependencies(self):
+    @asynccontextmanager
+    async def lifespan(self, app: FastAPI):
+        """
+        Handles async setup and teardown of dependencies.
+        """
+        # --- Setup Phase ---
+        # If your adapters or store need to connect to a DB/API, 
+        # you can now 'await' those connections here.
+        state_store = StateStore()
+
         adapters = {
             "Workday": WorkdayAdapter(),
             "MSGraph": MSGraphAdapter()
@@ -31,15 +42,27 @@ class AppFactory:
             planner=TaskPlanner(),
             policy_engine=PolicyEngine(),
             executor=ExecutionEngine(adapters),
-            state_store=StateStore(),
+            state_store=state_store,
             scrubber=PIIScrubber()
         )
 
+        # Register routes now that orchestrator is ready
+        self._register_routes()
+
+        yield
+
+        # --- Teardown Phase ---
+        # await state_store.close_connection() 
+
     def _register_routes(self):
+        # Ensure we only register once
         routes = OrchestratorRoutes(self.orchestrator)
         self.app.include_router(routes.router)
 
     def get_app(self) -> FastAPI:
         return self.app
 
-app = AppFactory().get_app()
+
+# Create the instance
+app_factory = AppFactory()
+app = app_factory.get_app()

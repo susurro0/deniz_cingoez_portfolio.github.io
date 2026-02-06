@@ -8,11 +8,12 @@ from automation_app.models.plan import Plan
 from automation_app.models.action import Action
 
 
-def test_generate_plan_for_pto():
+@pytest.mark.asyncio
+async def test_generate_plan_for_pto():
     planner = TaskPlanner()
     intent = Intent(type="PTO", entity="Friday")
 
-    plan = planner.generate_plan(intent, state={})
+    plan = await planner.generate_plan(intent, state={})
 
     assert isinstance(plan, Plan)
     assert len(plan.actions) == 2
@@ -31,26 +32,27 @@ def test_generate_plan_for_pto():
     assert second.method == "book_time_off"
     assert second.params == {"dates": ["Friday"]}
 
-
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "intent_type",
     ["Meeting", "Travel", "Sick", "Random"]
 )
-def test_generate_plan_unsupported_intents(intent_type):
+async def test_generate_plan_unsupported_intents(intent_type):
     planner = TaskPlanner()
     intent = Intent(type=intent_type, entity="Friday")
 
     with pytest.raises(ValueError) as exc:
-        planner.generate_plan(intent, state={})
+        await planner.generate_plan(intent, state={})
 
     assert "Unsupported intent" in str(exc.value)
 
 
-def test_generate_plan_ignores_state_for_now():
+@pytest.mark.asyncio
+async def test_generate_plan_ignores_state_for_now():
     planner = TaskPlanner()
     intent = Intent(type="PTO", entity="Friday")
 
-    plan = planner.generate_plan(intent, state={"foo": "bar"})
+    plan = await planner.generate_plan(intent, state={"foo": "bar"})
 
     # State is not used yet, but plan should still be correct
     assert len(plan.actions) == 2
