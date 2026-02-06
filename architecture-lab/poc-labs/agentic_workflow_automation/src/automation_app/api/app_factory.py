@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from automation_app.adapters.msgraph_adapter import MSGraphAdapter
 from automation_app.adapters.workday_adapter import WorkdayAdapter
 from automation_app.api.routes.orchestrator_routes import OrchestratorRoutes
+from automation_app.config.policies import POLICY_RULES
 from automation_app.engines.execution_engine import ExecutionEngine
 from automation_app.engines.intent_classifier import IntentClassifier
 from automation_app.engines.policy_engine import PolicyEngine
@@ -40,7 +41,7 @@ class AppFactory:
         self.orchestrator = AgenticOrchestrator(
             classifier=IntentClassifier(),
             planner=TaskPlanner(),
-            policy_engine=PolicyEngine(),
+            policy_engine=PolicyEngine(rules=POLICY_RULES),
             executor=ExecutionEngine(adapters),
             state_store=state_store,
             scrubber=PIIScrubber()

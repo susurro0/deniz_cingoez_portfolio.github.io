@@ -18,13 +18,21 @@ class OrchestratorRoutes:
             result = await self.orchestrator.process_request(
                 user_input=req.text,
                 session_id=req.session_id,
-                user_id=req.user_id if hasattr(req, 'user_id') else "anonymous"
+                user_id=req.user_id if hasattr(req, 'user_id') else "anonymous",
+                role=req.role,
+                department=req.department
             )
             return {"message": result}
 
         @self.router.post("/propose", response_model=OrchestratorResponse)
         async def propose(req: OrchestratorRequest):
-            result = await self.orchestrator.propose(req.text, req.session_id)
+            result = await self.orchestrator.propose(
+                user_input=req.text,
+                session_id=req.session_id,
+                user_id=req.user_id,
+                role=req.role,
+                department=req.department
+            )
             # Standardizing the response mapping
             return {
                 "message": result["message"],

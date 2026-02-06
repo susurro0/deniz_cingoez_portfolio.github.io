@@ -42,7 +42,12 @@ def create_test_app():
 def test_process_route_success():
     app, orchestrator = create_test_app()
 
-    payload = {"session_id": "s1", "text": "Hello"}
+    payload = {
+        "session_id": "s1",
+        "text": "Book PTO for Friday",
+        "role": "Manager",
+        "department": "Engineering"
+    }
 
     response = app.post("/process", json=payload)
 
@@ -50,9 +55,7 @@ def test_process_route_success():
     assert response.json() == {"message": "Processed OK", 'plan': None, 'state': None}
 
     orchestrator.process_request.assert_awaited_once_with(
-        user_input="Hello",
-        session_id="s1",
-        user_id="anonymous"
+        user_input='Book PTO for Friday', session_id='s1', user_id='anonymous', role='Manager', department='Engineering'
     )
 
 
@@ -70,10 +73,15 @@ def test_process_route_validation_error():
 # /propose
 # ---------------------------------------------------------------------------
 
-def test_propose_route_success():
+def test_propose_success():
     client, orchestrator = create_test_app()
 
-    payload = {"session_id": "s1", "text": "Plan something"}
+    payload = {
+        "session_id": "s1",
+        "text": "Book PTO for Friday",
+        "role": "Manager",
+        "department": "Engineering"
+    }
 
     response = client.post("/propose", json=payload)
 
@@ -84,7 +92,9 @@ def test_propose_route_success():
         "plan": {"foo": "bar"}
     }
 
-    orchestrator.propose.assert_called_once_with("Plan something", "s1")
+    orchestrator.propose.assert_called_once_with(
+        user_input='Book PTO for Friday', session_id='s1', user_id='anonymous', role='Manager', department='Engineering'
+    )
 
 
 def test_propose_route_validation_error():
