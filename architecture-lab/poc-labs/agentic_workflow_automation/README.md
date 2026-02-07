@@ -89,43 +89,40 @@ The following sequence highlights the **Authorization Gate**. The system will no
 sequenceDiagram
     autonumber
     participant User
-    participant Orch as Orchestrator
-    participant IC as Intent Classifier
-    participant SS as State Store
+    participant Orch as Orchestrator (Controller)
     participant Planner as Task Planner (LLM)
-    participant Policy as Policy Engine
-    participant Adapters as System Adapters
+    participant SS as State Store (Memory)
+    participant Adapters as System Adapters (Tools)
+    participant Policy as Guardrails (Safety)
 
     User->>Orch: "Book PTO for Friday"
     
-    Note over Orch, IC: Phase 1: Understanding
-    Orch->>IC: classify(text)
-    IC-->>Orch: Intent(type='PTO', entity='Friday')
-    
-    Orch->>SS: get_context(session_id)
-    SS-->>Orch: {previous_context: None}
+    Note over Orch, SS: Phase 1: Context Retrieval
+    Orch->>SS: fetch_session_history()
+    SS-->>Orch: Context(User Preferences/History)
 
-    Note over Orch, Planner: Phase 2: Reasoning
+    Note over Orch, Planner: Phase 2: Iterative Planning
     Orch->>Planner: generate_plan(Intent, Context)
-    Planner-->>Orch: Plan: [Check Calendar, Book Workday]
+    Planner-->>Orch: Plan: [Task A, Task B]
     
-    Orch->>User: "I'll check your calendar and book PTO. Confirm?"
-    User->>Orch: "Yes, go ahead."
+    Orch->>Policy: validate_safety(Plan)
+    Policy-->>Orch: Approval: True
 
-    Note over Orch, Policy: Phase 3: Validation
-    Orch->>Policy: validate_plan(Plan)
-    Policy-->>Orch: bool(True)
+    Note over Orch, Adapters: Phase 3: Execution Loop
+    loop Every Task in Plan
+        Orch->>Adapters: call_tool(args)
+        Adapters-->>Orch: Result (Data or Error)
+        
+        alt is Error?
+            Orch->>Planner: report_error(Error)
+            Planner-->>Orch: Updated_Plan (Self-Correction)
+        else is Success?
+            Orch->>SS: save_checkpoint(Current_State)
+        end
+    end
 
-    Note over Orch, Adapters: Phase 4: Execution
-    Orch->>Adapters: execute(MSGraph, 'check_availability')
-    Adapters-->>Orch: Status: Available
-    Orch->>Adapters: execute(Workday, 'book_time_off')
-    Adapters-->>Orch: Status: Success (Ref: 123)
-
-    Note over Orch, SS: Phase 5: Persistence
-    Orch->>SS: save_context(session_id, updated_state)
+    Note over Orch, User: Phase 4: Final Output
     Orch->>User: "Done! PTO is booked (Ref: 123)"
-    
 ```
 
 ---
