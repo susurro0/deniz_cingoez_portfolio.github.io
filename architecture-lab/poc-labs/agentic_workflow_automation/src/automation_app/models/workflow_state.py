@@ -6,3 +6,4 @@ class WorkflowState(str, Enum):
     EXECUTING = "EXECUTING"
     COMPLETED = "COMPLETED"
     REJECTED = "REJECTED"
+    IN_PROGRESS = "IN PROGRESS"
