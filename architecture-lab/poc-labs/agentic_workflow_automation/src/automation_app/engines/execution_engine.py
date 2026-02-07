@@ -121,7 +121,7 @@ class ExecutionEngine:
             return
         try:
             self.state_store.save_context(session_id, {
-                "last_plan": plan.dict(),
+                "last_plan": plan.model_dump(),
                 "last_action_index": step_idx,
                 "last_action_status": status
             })

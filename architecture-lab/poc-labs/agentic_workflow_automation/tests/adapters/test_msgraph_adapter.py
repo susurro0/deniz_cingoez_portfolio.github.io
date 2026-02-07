@@ -2,9 +2,6 @@ import pytest
 from unittest.mock import patch, AsyncMock
 from automation_app.adapters.msgraph_adapter import MSGraphAdapter
 
-pytestmark = pytest.mark.asyncio  # mark all tests async unless overridden
-
-
 # ---------------------------------------------------------------------------
 # execute()
 # ---------------------------------------------------------------------------
@@ -75,7 +72,6 @@ async def test_compensate_unknown_action_is_ignored():
 # ---------------------------------------------------------------------------
 # supported_actions()
 # ---------------------------------------------------------------------------
-@pytest.mark.asyncio
 def test_supported_actions():
     adapter = MSGraphAdapter()
     assert adapter.supported_actions() == {"send_email", "create_calendar_event"}
