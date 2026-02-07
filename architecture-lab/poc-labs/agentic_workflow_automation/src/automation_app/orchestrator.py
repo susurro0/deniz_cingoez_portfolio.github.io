@@ -58,7 +58,7 @@ class AgenticOrchestrator:
         except Exception as e:
             self.auditor.log(
                 session_id,
-                "EXECUTION_ERROR",
+                WorkflowState.REJECTED,
                 {"error": str(e)},
             )
 

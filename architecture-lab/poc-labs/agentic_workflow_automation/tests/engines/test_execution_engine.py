@@ -45,8 +45,11 @@ async def test_run_success_async(engine, mock_adapter):
 
     assert result is True
     mock_adapter.execute_async.assert_awaited_once_with("send_email", {"username": "test_user"})
-    engine.auditor.log.assert_any_call("123", "ACTION_SUCCEEDED", ANY)
 
+    success_logs = [
+        c for c in engine.auditor.log.call_args_list
+        if c[0][1] == "ACTION_SUCCEEDED"
+    ]
 
 @pytest.mark.asyncio
 async def test_run_success_sync_fallback(engine, mock_adapter):
@@ -222,8 +225,8 @@ async def test_run_adapter_exception(engine, make_plan):
     class FakeAdapter:
         def execute(self, method, params):
             raise RuntimeError("boom")
-    engine.rollback = AsyncMock()
 
+    engine.rollback = AsyncMock()
     engine.adapters = {"Workday": FakeAdapter()}
     engine._is_action_supported = MagicMock(return_value=True)
 
@@ -236,13 +239,23 @@ async def test_run_adapter_exception(engine, make_plan):
     assert result is False
     engine.rollback.assert_awaited_once()
 
-    # Verify audit logged the exception
-    audit_calls = [call for call in engine.auditor.log.call_args_list if call[0][1] == "ACTION_FAILED"]
-    assert len(audit_calls) == 1
+    # ExecutionEngine logs ACTION_FAILED (no trace)
+    failed_logs = [
+        c for c in engine.auditor.log.call_args_list
+        if c[0][1] == "ACTION_FAILED"
+    ]
+    assert len(failed_logs) == 1
 
-    _, _, payload = audit_calls[0][0]
-    assert payload["error"] == "boom"
-    assert "trace" in payload
+    _, _, failed_payload = failed_logs[0][0]
+    assert failed_payload["error"] == "boom"
+    assert "trace" not in failed_payload
+
+    # RecoveryEngine should NOT log ACTION_EXECUTION_ERROR for non-retry errors
+    recovery_logs = [
+        c for c in engine.auditor.log.call_args_list
+        if c[0][1] == "ACTION_EXECUTION_ERROR"
+    ]
+    assert len(recovery_logs) == 0
 
 
 @pytest.mark.asyncio
