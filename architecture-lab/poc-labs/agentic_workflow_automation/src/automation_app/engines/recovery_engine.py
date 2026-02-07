@@ -6,6 +6,7 @@ import traceback
 
 from automation_app.audit.audit_logger import AuditLogger
 from automation_app.config.constants import RecoveryDecision
+from automation_app.engines.exceptions import ActionFailure
 
 
 class RecoveryEngine:
@@ -35,15 +36,17 @@ class RecoveryEngine:
                 return await execute_fn()
 
             except Exception as exc:
+                last_exc = exc
+
                 decision = self._classify_error(exc)
 
                 self.auditor.log(
                     session_id,
-                    "ACTION_EXECUTION_ERROR",
+                    "ATTEMPT FAILED",
                     {
                         "step": step_idx,
                         "attempt": attempt,
-                        "decision": decision,
+                        "decision": str(decision),
                         "error": str(exc),
                         "trace": traceback.format_exc(),
                     },
@@ -53,7 +56,7 @@ class RecoveryEngine:
                     await asyncio.sleep(self._backoff(attempt))
                     continue
 
-                raise  # bubble up to orchestrator
+                raise  ActionFailure(decision, exc)
 
     def _classify_error(self, exc: Exception) -> str:
         """
@@ -62,10 +65,31 @@ class RecoveryEngine:
         """
         msg = str(exc).lower()
 
-        if "timeout" in msg or "temporarily unavailable" in msg:
+        if any(keyword in msg for keyword in [
+            "timeout",
+            "temporarily unavailable",
+            "rate limit",
+            "connection reset",
+            "503",
+        ]):
             return RecoveryDecision.RETRY
 
-        return RecoveryDecision.FAIL
+        if any(keyword in msg for keyword in [
+            "permission",
+            "not authorized",
+            "forbidden",
+            "403",
+        ]):
+            return RecoveryDecision.PERMISSION
+
+        if any(keyword in msg for keyword in [
+            "not supported",
+            "unsupported action",
+            "unknown method",
+        ]):
+            return RecoveryDecision.NOT_SUPPORTED
+
+        return RecoveryDecision.UNKNOWN
 
     def _backoff(self, attempt: int) -> float:
         return self.base_backoff * (2 ** (attempt - 1))

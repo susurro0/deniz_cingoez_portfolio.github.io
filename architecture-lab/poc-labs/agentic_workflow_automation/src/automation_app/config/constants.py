@@ -1,8 +1,13 @@
+from enum import Enum
+
 HITL_TIMEOUT_SECONDS = 3600
 MAX_RETRIES = 3
 BASE_BACKOFF = 0.5
 
-class RecoveryDecision:
-    RETRY = "retry"
-    REPLAN = "replan"
-    FAIL = "fail"
+class RecoveryDecision(Enum):
+    RETRY = "RETRY"
+    RE_PLAN = "RE_PLAN"
+    FAIL = "FAIL"
+    PERMISSION = "PERMISSION"
+    UNKNOWN = "UNKNOWN"
+    NOT_SUPPORTED = "NOT_SUPPORTED"

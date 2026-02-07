@@ -1,10 +1,19 @@
 import pytest
 from types import SimpleNamespace
+
+from automation_app.config.constants import RecoveryDecision
 from automation_app.models.intent import Intent
 from automation_app.models.plan import Plan
 from automation_app.models.action import Action
 from automation_app.engines.task_planner import TaskPlanner
 
+
+@pytest.fixture
+def sample_plan():
+    return Plan(actions=[
+        Action(adapter="Workday", method="create_time_off", params={"x": 1}),
+        Action(adapter="MSGraph", method="create_calendar_event", params={"y": 2})
+    ])
 
 @pytest.mark.asyncio
 async def test_generate_plan_pto_intent():
@@ -59,3 +68,57 @@ async def test_generate_plan_unsupported_intent_raises():
         await planner.generate_plan(intent, state)
 
     assert "Unsupported intent" in str(exc_info.value)
+
+@pytest.mark.asyncio
+async def test_repair_plan_not_supported(sample_plan):
+    planner = TaskPlanner()
+    failed_action = sample_plan.actions[0]
+
+    new_plan = await planner.repair_plan(
+        failed_plan=sample_plan,
+        failed_action=failed_action,
+        decision=RecoveryDecision.NOT_SUPPORTED,
+    )
+
+    # Should replace the failing action with a notification
+    assert len(new_plan.actions) == 2
+    assert new_plan.actions[0].adapter == "notification"
+    assert new_plan.actions[0].method == "send"
+    assert "Unsupported action replaced with notification" in new_plan.actions[0].params["reason"]
+    # The second action should remain unchanged
+    assert new_plan.actions[1] == sample_plan.actions[1]
+
+@pytest.mark.asyncio
+async def test_repair_plan_permission_inserts_approval(sample_plan):
+    planner = TaskPlanner()
+    failed_action = sample_plan.actions[1]
+
+    new_plan = await planner.repair_plan(
+        failed_plan=sample_plan,
+        failed_action=failed_action,
+        decision=RecoveryDecision.PERMISSION,
+    )
+
+    # Should insert a HITL approval step before the failing action
+    assert len(new_plan.actions) == 3
+    approval_action = new_plan.actions[1]
+    assert approval_action.adapter == "HITL"
+    assert approval_action.method == "request_approval"
+    assert approval_action.params["original_step"] == 1
+    assert approval_action.params["reason"] == "User approval required for this action"
+
+    # The failing action should now be at index 2
+    assert new_plan.actions[2] == failed_action
+
+@pytest.mark.asyncio
+async def test_repair_plan_unrecoverable_returns_none(sample_plan):
+    planner = TaskPlanner()
+    failed_action = sample_plan.actions[0]
+
+    result = await planner.repair_plan(
+        failed_plan=sample_plan,
+        failed_action=failed_action,
+        decision=RecoveryDecision.UNKNOWN,  # unrecoverable
+    )
+
+    assert result is None

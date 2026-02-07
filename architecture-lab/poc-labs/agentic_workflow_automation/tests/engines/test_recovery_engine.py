@@ -5,6 +5,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from automation_app.config.constants import RecoveryDecision
 from automation_app.engines.recovery_engine import RecoveryEngine
 
+@pytest.fixture
+def engine():
+    return RecoveryEngine()
 
 @pytest.mark.asyncio
 async def test_attempt_with_recovery_success_first_try():
@@ -91,10 +94,63 @@ def test_classify_error_retry():
     assert engine._classify_error(Exception("Timeout occurred")) == RecoveryDecision.RETRY
     assert engine._classify_error(Exception("temporarily unavailable")) == RecoveryDecision.RETRY
 
+@pytest.mark.parametrize(
+    "msg",
+    [
+        "timeout occurred",
+        "temporarily unavailable",
+        "rate limit exceeded",
+        "connection reset by peer",
+        "503 service unavailable",
+    ],
+)
+def test_classify_retry(engine, msg):
+    exc = Exception(msg)
+    decision = engine._classify_error(exc)
+    assert decision == RecoveryDecision.RETRY
 
-def test_classify_error_fail():
-    engine = RecoveryEngine()
-    assert engine._classify_error(Exception("fatal")) == RecoveryDecision.FAIL
+
+@pytest.mark.parametrize(
+    "msg",
+    [
+        "random failure",
+        "unexpected error",
+        "boom",
+        "internal server meltdown",
+    ],
+)
+def test_classify_unknown(engine, msg):
+    exc = Exception(msg)
+    decision = engine._classify_error(exc)
+    assert decision == RecoveryDecision.UNKNOWN
+
+@pytest.mark.parametrize(
+    "msg",
+    [
+        "This action is not supported",
+        "Unsupported action: create_user",
+        "Unknown method foo_bar",
+    ],
+)
+def test_classify_not_supported(engine, msg):
+    exc = Exception(msg)
+    decision = engine._classify_error(exc)
+    assert decision == RecoveryDecision.NOT_SUPPORTED
+
+
+@pytest.mark.parametrize(
+    "msg",
+    [
+        "Permission denied",
+        "User not authorized",
+        "Forbidden operation",
+        "Error 403: forbidden",
+    ],
+)
+def test_classify_permission(engine, msg):
+    exc = Exception(msg)
+    decision = engine._classify_error(exc)
+    assert decision == RecoveryDecision.PERMISSION
 
 
 def test_backoff_calculation():

@@ -36,12 +36,12 @@ class AppFactory:
             "MSGraph": MSGraphAdapter()
         }
         self.recovery_engine=RecoveryEngine( max_retries=MAX_RETRIES, base_backoff = BASE_BACKOFF, auditor=AuditLogger),
-
+        self.planner = TaskPlanner()
         self.orchestrator = AgenticOrchestrator(
             classifier=IntentClassifier(),
-            planner=TaskPlanner(),
+            planner= self.planner,
             policy_engine=PolicyEngine(rules=POLICY_RULES),
-            executor=ExecutionEngine(adapters=adapters, recovery_engine=self.recovery_engine),
+            executor=ExecutionEngine(adapters=adapters, recovery_engine=self.recovery_engine,planner= self.planner),
             state_store=state_store,
             scrubber=PIIScrubber()
         )
