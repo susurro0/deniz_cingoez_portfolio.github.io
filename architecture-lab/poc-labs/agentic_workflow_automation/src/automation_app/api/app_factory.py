@@ -1,4 +1,6 @@
+import contextlib
 from contextlib import asynccontextmanager
+import asyncio
 from fastapi import FastAPI
 
 from automation_app.adapters.msgraph_adapter import MSGraphAdapter
@@ -16,7 +18,6 @@ from automation_app.utils.pii_scrubber import PIIScrubber
 
 class AppFactory:
     def __init__(self):
-        # We define the lifespan to handle async setup/teardown
         self.app = FastAPI(
             title="Agentic Workflow Orchestrator",
             lifespan=self.lifespan
@@ -25,12 +26,6 @@ class AppFactory:
 
     @asynccontextmanager
     async def lifespan(self, app: FastAPI):
-        """
-        Handles async setup and teardown of dependencies.
-        """
-        # --- Setup Phase ---
-        # If your adapters or store need to connect to a DB/API, 
-        # you can now 'await' those connections here.
         state_store = StateStore()
 
         adapters = {
@@ -47,16 +42,26 @@ class AppFactory:
             scrubber=PIIScrubber()
         )
 
-        # Register routes now that orchestrator is ready
         self._register_routes()
 
-        yield
+        async def run_cleanup():
+            while True:
+                await self.orchestrator.cleanup_stale_proposals()
+                await asyncio.sleep(60)
 
-        # --- Teardown Phase ---
-        # await state_store.close_connection() 
+        cleanup_task = asyncio.create_task(run_cleanup())
+
+        try:
+            yield
+        finally:
+            # --- Teardown Phase ---
+            cleanup_task.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await cleanup_task
+            # await state_store.close_connection()
+            pass
 
     def _register_routes(self):
-        # Ensure we only register once
         routes = OrchestratorRoutes(self.orchestrator)
         self.app.include_router(routes.router)
 
@@ -64,6 +69,5 @@ class AppFactory:
         return self.app
 
 
-# Create the instance
 app_factory = AppFactory()
 app = app_factory.get_app()
