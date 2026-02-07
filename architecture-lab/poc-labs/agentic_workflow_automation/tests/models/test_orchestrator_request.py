@@ -1,15 +1,17 @@
-# tests/models/test_orchestrator_request.py
-
 import pytest
 from pydantic import ValidationError
 
 from automation_app.models.orchestrator_request import OrchestratorRequest
 
 
-def test_orchestrator_request_creation():
+def test_orchestrator_request_creation_defaults():
     req = OrchestratorRequest(session_id="session-1", text="Hello")
+
     assert req.session_id == "session-1"
     assert req.text == "Hello"
+    assert req.user_id == "anonymous"
+    assert req.role is None
+    assert req.department is None
 
 
 @pytest.mark.parametrize(
@@ -32,6 +34,7 @@ def test_orchestrator_request_missing_fields(payload, missing_field):
         {"session_id": 123, "text": "Hello"},          # session_id must be str
         {"session_id": "session-1", "text": 999},      # text must be str
         {"session_id": ["not", "a", "string"], "text": "Hello"},
+        {"session_id": "s1", "text": "Hi", "user_id": 123},  # user_id must be str
     ],
 )
 def test_orchestrator_request_invalid_types(payload):
@@ -40,9 +43,15 @@ def test_orchestrator_request_invalid_types(payload):
 
 
 def test_orchestrator_request_serialization_round_trip():
-    data = {"session_id": "session-1", "text": "Hello"}
-    req = OrchestratorRequest(**data)
-    assert req.model_dump() == data
+    req = OrchestratorRequest(session_id="session-1", text="Hello")
+
+    assert req.model_dump() == {
+        "session_id": "session-1",
+        "text": "Hello",
+        "user_id": "anonymous",
+        "role": None,
+        "department": None,
+    }
 
 
 def test_orchestrator_request_equality():

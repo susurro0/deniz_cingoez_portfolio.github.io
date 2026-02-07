@@ -5,26 +5,25 @@ class MSGraphAdapter(EnterpriseAdapter):
 
     # -------- EnterpriseAdapter contract --------
 
-    def execute(self, action: str, params: dict) -> dict:
+    async def execute(self, action: str, params: dict) -> dict:
         if action == "send_email":
-            return self.send_email(params)
+            return await self.send_email(params)
 
         if action == "create_calendar_event":
-            return self.create_calendar_event(params)
+            return await self.create_calendar_event(params)
 
         raise ValueError(f"Unsupported MSGraph action: {action}")
 
-    def compensate(self, action: str, params: dict, result: dict) -> None:
+    async def compensate(self, action: str, params: dict, result: dict) -> None:
         if action == "send_email":
-            self.log_email_compensation(result)
+            await self.log_email_compensation(result)
             return
 
         if action == "create_calendar_event":
-            self.delete_calendar_event(result["event_id"])
+            await self.delete_calendar_event(result["event_id"])
             return
 
         # Unknown actions are ignored during compensation
-        # (never raise in rollback unless you want cascading failures)
 
     def supported_actions(self) -> set:
         return {
@@ -34,18 +33,21 @@ class MSGraphAdapter(EnterpriseAdapter):
 
     # -------- Concrete MS Graph operations --------
 
-    def send_email(self, params: dict) -> dict:
+    async def send_email(self, params: dict) -> dict:
+        # await ms_graph_client.send_mail(...)
         message_id = "MSG-123"
         return {"message_id": message_id}
 
-    def create_calendar_event(self, params: dict) -> dict:
+    async def create_calendar_event(self, params: dict) -> dict:
+        # await ms_graph_client.create_event(...)
         event_id = "EVT-456"
         return {"event_id": event_id}
 
-    def delete_calendar_event(self, event_id: str) -> None:
+    async def delete_calendar_event(self, event_id: str) -> None:
+        # await ms_graph_client.delete_event(event_id)
         # Idempotent delete
         pass
 
-    def log_email_compensation(self, result: dict) -> None:
-        # Semantic compensation (audit / alert / follow-up)
+    async def log_email_compensation(self, result: dict) -> None:
+        # async audit / alert / follow-up
         pass

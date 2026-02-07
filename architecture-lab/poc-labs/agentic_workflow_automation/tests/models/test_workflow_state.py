@@ -10,11 +10,12 @@ def test_workflow_state_members_exist():
     assert WorkflowState.EXECUTING.value == "EXECUTING"
     assert WorkflowState.COMPLETED.value == "COMPLETED"
     assert WorkflowState.REJECTED.value == "REJECTED"
+    assert WorkflowState.IN_PROGRESS.value == "IN PROGRESS"
 
 
 def test_workflow_state_iteration():
     states = list(WorkflowState)
-    assert len(states) == 5
+    assert len(states) == 6
     assert WorkflowState.PROPOSED in states
     assert WorkflowState.REJECTED in states
 
