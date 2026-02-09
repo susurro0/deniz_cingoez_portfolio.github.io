@@ -6,10 +6,13 @@ from fastapi import FastAPI
 from automation_app.adapters.msgraph_adapter import MSGraphAdapter
 from automation_app.adapters.workday_adapter import WorkdayAdapter
 from automation_app.api.routes.orchestrator_routes import OrchestratorRoutes
+from automation_app.audit.audit_logger import AuditLogger
+from automation_app.config.constants import MAX_RETRIES, BASE_BACKOFF
 from automation_app.config.policies import POLICY_RULES
 from automation_app.engines.execution_engine import ExecutionEngine
 from automation_app.engines.intent_classifier import IntentClassifier
 from automation_app.engines.policy_engine import PolicyEngine
+from automation_app.engines.recovery_engine import RecoveryEngine
 from automation_app.engines.task_planner import TaskPlanner
 from automation_app.orchestrator import AgenticOrchestrator
 from automation_app.store.state_store import StateStore
@@ -32,12 +35,13 @@ class AppFactory:
             "Workday": WorkdayAdapter(),
             "MSGraph": MSGraphAdapter()
         }
-
+        self.recovery_engine=RecoveryEngine( max_retries=MAX_RETRIES, base_backoff = BASE_BACKOFF, auditor=AuditLogger),
+        self.planner = TaskPlanner()
         self.orchestrator = AgenticOrchestrator(
             classifier=IntentClassifier(),
-            planner=TaskPlanner(),
+            planner= self.planner,
             policy_engine=PolicyEngine(rules=POLICY_RULES),
-            executor=ExecutionEngine(adapters),
+            executor=ExecutionEngine(adapters=adapters, recovery_engine=self.recovery_engine,planner= self.planner),
             state_store=state_store,
             scrubber=PIIScrubber()
         )

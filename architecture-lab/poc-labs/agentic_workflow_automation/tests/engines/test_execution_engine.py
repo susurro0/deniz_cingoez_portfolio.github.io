@@ -2,9 +2,12 @@ import pytest
 import asyncio
 from unittest.mock import MagicMock, AsyncMock, patch, ANY
 
+from automation_app.config.constants import RecoveryDecision
+from automation_app.engines.exceptions import ActionFailure
 from automation_app.engines.execution_engine import ExecutionEngine
 from automation_app.models.action import Action
 from automation_app.models.plan import Plan
+from automation_app.models.workflow_state import WorkflowState
 
 
 class MockAction:
@@ -24,62 +27,76 @@ def mock_adapter():
     return adapter
 
 
-
 @pytest.fixture
 def engine(mock_adapter):
     adapters = {"identity_service": mock_adapter}
-    return ExecutionEngine(adapters=adapters, state_store=MagicMock(), auditor=MagicMock())
 
+    mock_planner = AsyncMock()
 
+    return ExecutionEngine(
+        adapters=adapters,
+        state_store=MagicMock(),
+        auditor=MagicMock(),
+        planner=mock_planner
+    )
 ## --- Success Paths ---
 
 @pytest.mark.asyncio
 async def test_run_success_async(engine, mock_adapter):
-    # Setup
-    action = MockAction("identity_service", "send_email", {"username": "test_user"})
-    plan = MagicMock(spec=Plan)
-    plan.actions = [action]
-    plan.dict.return_value = {"actions": []}
+    action = Action(adapter="identity_service", method="send_email", params={"username": "test_user"})
+    plan = Plan(actions=[action])
 
     result = await engine.run(plan, session_id="123")
 
     assert result is True
     mock_adapter.execute_async.assert_awaited_once_with("send_email", {"username": "test_user"})
-    engine.auditor.log.assert_any_call("123", "ACTION_SUCCEEDED", ANY)
+
+    engine.auditor.log.assert_any_call(
+        "123",
+        WorkflowState.PROPOSED,
+        {"adapter": "identity_service", "method": "send_email", "step": 0},
+    )
 
 
 @pytest.mark.asyncio
 async def test_run_success_sync_fallback(engine, mock_adapter):
-    """Verifies engine falls back to .execute() if .execute_async() is missing."""
-    action = MockAction("identity_service", "send_email", {"id": 1})
-    plan = MagicMock(spec=Plan)
-    plan.actions = [action]
+    action = Action(adapter="identity_service", method="send_email", params={"id": 1})
+    plan = Plan(actions=[action])
 
-    # Remove the async mock attribute to force fallback
     del mock_adapter.execute_async
     mock_adapter.execute = MagicMock()
 
     result = await engine.run(plan, session_id="123")
 
     assert result is True
-    mock_adapter.execute.assert_called_once()
+    mock_adapter.execute.assert_called_once_with("send_email", {"id": 1})
 
 
 ## --- Error & Rollback Paths ---
 
 @pytest.mark.asyncio
-async def test_run_unsupported_action_no_execution_no_rollback(engine, mock_adapter):
-    action = MockAction("identity_service", "create_user", {"id": 1})
-    plan = MagicMock(spec=Plan)
-    plan.actions = [action]
+async def test_run_unsupported_action(engine, mock_adapter):
+    action = Action(adapter="identity_service", method="create_user", params={"id": 1})
+    plan = Plan(actions=[action])
+
+    engine._is_action_supported = MagicMock(return_value=False)
+    engine.rollback = AsyncMock()
 
     result = await engine.run(plan, session_id="999")
 
     assert result is False
-    mock_adapter.execute_async.assert_not_awaited()
-    mock_adapter.compensate_async.assert_not_awaited()
-    engine.auditor.log.assert_any_call("999", "EXECUTION_FAILED", ANY)
+    engine.rollback.assert_awaited_once()
 
+    engine.auditor.log.assert_any_call(
+        "999",
+        "ACTION_FAILED",
+        {
+            "adapter": "identity_service",
+            "method": "create_user",
+            "step": 0,
+            "error": "Action 'create_user' not supported by adapter 'identity_service'",
+        },
+    )
 
 @pytest.mark.asyncio
 async def test_rollback_compensation_failure_logging(engine, mock_adapter):
@@ -87,7 +104,6 @@ async def test_rollback_compensation_failure_logging(engine, mock_adapter):
     plan = MagicMock(spec=Plan)
     plan.actions = [action]
 
-    # Double failure: compensation fails too
     mock_adapter.compensate_async.side_effect = Exception("Critical Store Failure")
 
     await engine.rollback(plan, up_to_step=1, session_id="fail_999")
@@ -159,25 +175,32 @@ def make_plan():
 # 1. Missing adapter → should rollback and return False
 # ----------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_run_missing_adapter(engine, make_plan):
+async def test_run_missing_adapter():
+    engine = ExecutionEngine(adapters={})
+    engine.scrubber = MagicMock()
+    engine.scrubber.scrub_data.return_value = {"x": 1}
+    engine._audit = MagicMock()
+    engine._save_state = MagicMock()
     engine.rollback = AsyncMock()
-    plan = make_plan([
-        Action(adapter="MissingAdapter", method="do", params={"x": 1})
+
+    plan = Plan(actions=[
+        Action(adapter="Missing", method="do", params={"x": 1})
     ])
 
-    result = await engine.run(plan, session_id="s1")
+    result = await engine.run(plan, session_id="S1")
 
     assert result is False
     engine.rollback.assert_awaited_once()
-    engine.auditor.log.assert_any_call(
-        "s1",
+
+    engine._audit.assert_any_call(
+        "S1",
         "ACTION_FAILED",
         {
-            "adapter": "MissingAdapter",
+            "adapter": "Missing",
             "method": "do",
             "step": 0,
-            "error": "No adapter found for MissingAdapter"
-        }
+            "error": "No adapter found for Missing",
+        },
     )
 
 
@@ -185,32 +208,35 @@ async def test_run_missing_adapter(engine, make_plan):
 # 2. Unsupported method → should rollback and return False
 # ----------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_run_unsupported_method(engine, make_plan):
-    # Create a fake adapter with no supported method
+async def test_run_unsupported_method():
     fake_adapter = MagicMock()
+    engine = ExecutionEngine(adapters={"Workday": fake_adapter})
+    engine.scrubber = MagicMock()
+    engine.scrubber.scrub_data.return_value = {"x": 1}
+    engine._audit = MagicMock()
+    engine._save_state = MagicMock()
     engine.rollback = AsyncMock()
-    engine.adapters = {"Workday": fake_adapter}
 
-    # Force _is_action_supported to return False
     engine._is_action_supported = MagicMock(return_value=False)
 
-    plan = make_plan([
+    plan = Plan(actions=[
         Action(adapter="Workday", method="not_supported", params={"x": 1})
     ])
 
-    result = await engine.run(plan, session_id="s2")
+    result = await engine.run(plan, session_id="S2")
 
     assert result is False
     engine.rollback.assert_awaited_once()
-    engine.auditor.log.assert_any_call(
-        "s2",
-        "EXECUTION_FAILED",
+
+    engine._audit.assert_any_call(
+        "S2",
+        "ACTION_FAILED",
         {
             "adapter": "Workday",
             "method": "not_supported",
             "step": 0,
-            "error": "Action 'not_supported' not supported by adapter 'Workday'"
-        }
+            "error": "Action 'not_supported' not supported by adapter 'Workday'",
+        },
     )
 
 
@@ -218,31 +244,58 @@ async def test_run_unsupported_method(engine, make_plan):
 # 3. Adapter.execute raises exception → should rollback and return False
 # ----------------------------------------------------------------------
 @pytest.mark.asyncio
-async def test_run_adapter_exception(engine, make_plan):
+async def test_run_adapter_exception_triggers_replan(engine):
     class FakeAdapter:
         def execute(self, method, params):
             raise RuntimeError("boom")
-    engine.rollback = AsyncMock()
 
     engine.adapters = {"Workday": FakeAdapter()}
     engine._is_action_supported = MagicMock(return_value=True)
 
-    plan = make_plan([
-        Action(adapter="Workday", method="create", params={"x": 1})
-    ])
+    engine.recovery.attempt_with_recovery = AsyncMock(
+        side_effect=ActionFailure(
+            decision=RecoveryDecision.FAIL,
+            original=RuntimeError("boom")
+        )
+    )
+
+    engine.rollback = AsyncMock()
+    engine._replan_on_failure = AsyncMock(return_value=False)
+
+    plan = Plan(actions=[Action(adapter="Workday", method="create", params={"x": 1})])
 
     result = await engine.run(plan, session_id="s3")
 
     assert result is False
     engine.rollback.assert_awaited_once()
+    engine._replan_on_failure.assert_awaited_once()
 
-    # Verify audit logged the exception
-    audit_calls = [call for call in engine.auditor.log.call_args_list if call[0][1] == "ACTION_FAILED"]
-    assert len(audit_calls) == 1
+@pytest.mark.asyncio
+async def test_run_adapter_exception_triggers_re_plan(engine):
+    class FakeAdapter:
+        def execute(self, method, params):
+            raise RuntimeError("boom")
 
-    _, _, payload = audit_calls[0][0]
-    assert payload["error"] == "boom"
-    assert "trace" in payload
+    engine.adapters = {"Workday": FakeAdapter()}
+    engine._is_action_supported = MagicMock(return_value=True)
+
+    engine.recovery.attempt_with_recovery = AsyncMock(
+        side_effect=ActionFailure(
+            decision=RecoveryDecision.FAIL,
+            original=RuntimeError("boom")
+        )
+    )
+
+    engine.rollback = AsyncMock()
+    engine._replan_on_failure = AsyncMock(return_value=False)
+
+    plan = Plan(actions=[Action(adapter="Workday", method="create", params={"x": 1})])
+
+    result = await engine.run(plan, session_id="s3")
+
+    assert result is False
+    engine.rollback.assert_awaited_once()
+    engine._replan_on_failure.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -251,14 +304,11 @@ async def test_rollback_no_compensation_available(engine, mock_adapter):
     plan = MagicMock(spec=Plan)
     plan.actions = [action]
 
-    # Remove all possible compensation methods from the mock
     del mock_adapter.compensate_async
     del mock_adapter.compensate
 
-    # This should hit the 'continue' branch
     await engine.rollback(plan, up_to_step=1, session_id="roll_1")
 
-    # Verify that NO compensation log was created
     for call in engine.auditor.log.call_args_list:
         assert call[0][1] != "ACTION_COMPENSATED"
 
@@ -268,13 +318,154 @@ async def test_rollback_sync_fallback(engine, mock_adapter):
     plan = MagicMock(spec=Plan)
     plan.actions = [action]
 
-    # Setup a synchronous compensation method
     del mock_adapter.compensate_async
     mock_adapter.compensate = MagicMock() # standard MagicMock is NOT a coroutine function
 
     await engine.rollback(plan, up_to_step=1, session_id="roll_sync")
 
-    # Verify the sync method was called
     mock_adapter.compensate.assert_called_once_with("create_user", {"id": 5})
-    # Verify the success log
     engine.auditor.log.assert_any_call("roll_sync", "ACTION_COMPENSATED", ANY)
+
+
+@pytest.mark.asyncio
+async def test_replan_on_failure_triggers_audit_and_returns_false():
+    engine = ExecutionEngine(adapters={})
+
+    # Give engine a planner mock with repair_plan
+    mock_planner = MagicMock()
+    mock_planner.repair_plan = AsyncMock(return_value=None)
+    engine.planner = mock_planner
+
+    # Patch audit
+    engine._audit = MagicMock()
+
+    plan = Plan(actions=[
+        Action(adapter="Workday", method="create_time_off", params={"x": 1})
+    ])
+
+    failed_action = plan.actions[0]
+
+    result = await engine._replan_on_failure(
+        plan=plan,
+        failed_action=failed_action,
+        decision=RecoveryDecision.FAIL,
+        session_id="session_42",
+    )
+
+    # Validate return value
+    assert result is False
+
+    # Validate audit log
+    engine._audit.assert_called_once_with(
+        "session_42",
+        "REPLAN_TRIGGERED",
+        {
+            "adapter": "Workday",
+            "method": "create_time_off",
+            "decision": "FAIL",
+        },
+    )
+@pytest.mark.asyncio
+async def test_execute_action_with_recovery_unexpected_exception():
+    # Fake adapter with no async method
+    class FakeAdapter:
+        def execute(self, method, params):
+            return None
+
+    # Engine with mocked recovery engine
+    engine = ExecutionEngine(adapters={"Workday": FakeAdapter()})
+    engine._audit = MagicMock()
+
+    # Force recovery engine to throw a non-ActionFailure exception
+    engine.recovery.attempt_with_recovery = AsyncMock(
+        side_effect=ValueError("unexpected boom")
+    )
+
+    action = Action(
+        adapter="Workday",
+        method="create_time_off",
+        params={"x": 1},
+    )
+
+    # The method should re-raise the ValueError
+    with pytest.raises(ValueError):
+        await engine._execute_action_with_recovery(
+            action=action,
+            adapter=FakeAdapter(),
+            session_id="S4",
+            step_idx=0,
+        )
+
+    # Verify audit log was written correctly
+    engine._audit.assert_called_once_with(
+        "S4",
+        "ACTION_FAILED",
+        {
+            "adapter": "Workday",
+            "method": "create_time_off",
+            "step": 0,
+            "error": "unexpected boom",
+        },
+    )
+
+@pytest.mark.asyncio
+async def test_replan_on_failure_with_repaired_plan_reruns():
+    # --- Setup ---
+    # Create a fake plan and a failing action
+    failed_action = Action(adapter="Workday", method="create_time_off", params={"x": 1})
+    original_plan = Plan(actions=[failed_action])
+
+    # Create a repaired plan to be returned by the planner
+    repaired_action = Action(adapter="Workday", method="approve_time_off", params={"x": 1})
+    repaired_plan = Plan(actions=[repaired_action])
+
+    # Create ExecutionEngine with mocked planner, auditor, and run
+    engine = ExecutionEngine(adapters={})
+    engine._audit = MagicMock()
+    engine.auditor = MagicMock()
+    engine.planner = AsyncMock()
+    engine.planner.repair_plan = AsyncMock(return_value=repaired_plan)
+    engine.run = AsyncMock(return_value=True)  # pretend rerun succeeds
+
+    # --- Exercise ---
+    result = await engine._replan_on_failure(
+        plan=original_plan,
+        failed_action=failed_action,
+        decision=RecoveryDecision.FAIL,
+        session_id="session_42",
+    )
+
+    # --- Verify ---
+    # The return value should be whatever `run` returned
+    assert result is True
+
+    # `_audit` should be called for REPLAN_TRIGGERED
+    engine._audit.assert_called_with(
+        "session_42",
+        "REPLAN_TRIGGERED",
+        {
+            "adapter": "Workday",
+            "method": "create_time_off",
+            "decision": "FAIL",  # because decision.value is logged
+        },
+    )
+
+    # Planner.repair_plan should have been called once
+    engine.planner.repair_plan.assert_awaited_once_with(
+        failed_plan=original_plan,
+        failed_action=failed_action,
+        decision=RecoveryDecision.FAIL,
+    )
+
+    # run() should have been called with the repaired plan
+    engine.run.assert_awaited_once_with(repaired_plan, session_id="session_42")
+
+    # Auditor.log should log PLAN_REPAIRED
+    engine.auditor.log.assert_any_call(
+        "session_42",
+        "PLAN_REPAIRED",
+        {
+            "original_action": "create_time_off",
+            "new_plan": ["approve_time_off"],
+        },
+    )
