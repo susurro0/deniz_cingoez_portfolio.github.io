@@ -152,7 +152,76 @@ sequenceDiagram
 - `store/`: State and context management.
 
 ---
-## 🚀 Getting Started
+
+## ExecutionEngine Flow
+
+This diagram shows the flow of execution for the `ExecutionEngine.run()` method, including action execution, rollback, and self-correction via `_replan_on_failure`.
+
+```mermaid
+flowchart TD
+    %% -------------------------------
+    %% Swimlanes / Subgraphs
+    %% -------------------------------
+    subgraph EX["Execution"]
+        A["Start: run(plan, session_id)"] --> B{"More actions?"}
+        B -- No --> Z["Return True"]
+        B -- Yes --> C["Scrub action params (_scrubber.scrub_data)"]
+        C --> E["_save_state(EXECUTING)"]
+        E --> F{"Adapter exists?"}
+        F -- Yes --> I{"Action supported?"}
+        I -- Yes --> J["_execute_action_with_recovery"]
+        J --> K{"Action succeeded?"}
+        K -- Yes --> M["_save_state(PROPOSED)"]
+        M --> B
+        I -- No --> G["_fail_fast: Audit ACTION_FAILED + rollback"]
+        F -- No --> G
+    end
+
+    subgraph AU["Audit"]
+        D["Audit: ACTION_STARTED"]
+        L["Audit: WorkflowState.PROPOSED"]
+        N["Audit: WorkflowState.REJECTED + error details"]
+        X["Audit: ACTION_FAILED (unexpected exception)"]
+        S["Audit: PLAN_REPAIRED"]
+        U["Audit: PLAN_UNRECOVERABLE"]
+    end
+
+    subgraph RB["Rollback"]
+        O["_save_state(REJECTED)"]
+        P["Rollback up to failed step"]
+    end
+
+    subgraph RC["Recovery / Replan"]
+        Q["_replan_on_failure(failed_action, decision)"]
+        R{"Repair plan returned?"}
+        T["Re-run repaired plan"]
+    end
+
+    %% -------------------------------
+    %% Connections between lanes
+    %% -------------------------------
+    C --> D
+    D --> E
+
+    J -- Failure(ActionFailure) --> N
+    N --> O
+    O --> P
+    P --> Q
+    Q --> R
+
+    R -- Yes --> S
+    S --> T
+    T --> Z
+
+    R -- No --> U
+    U --> V["Return False"]
+
+    J -- Unexpected Exception --> X
+    X --> Y["Raise exception"]
+
+```
+
+## Getting Started
 
 ### Prerequisites
 
