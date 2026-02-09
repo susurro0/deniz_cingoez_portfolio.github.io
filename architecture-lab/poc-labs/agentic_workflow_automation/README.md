@@ -144,7 +144,7 @@ sequenceDiagram
 
 --- 
 
-## 📁 Project Structure
+## Project Structure
 - `orchestrator.py`: Core logic and service coordination.
 - `models/`: Dataclasses for `Intent`, `Plan`, and `Action`.
 - `engines/`: Implementation of `TaskPlanner` and `PolicyEngine`.
@@ -234,3 +234,123 @@ flowchart TD
 python main.py
 
 ```
+
+## Example End-to-End Workflow
+
+This section illustrates a **concrete execution path** through the system, from natural language input to audited execution.  
+Enterprise API calls and responses are currently **mocked**, but the orchestration, policy enforcement, and recovery logic are fully exercised.
+
+### User Request
+> "Book PTO for Friday"
+
+---
+
+#### Step 1: Intent Classification
+The system identifies the core request and confidence level.
+```json
+{
+  "intent": "BOOK_TIME_OFF",
+  "confidence": 0.94
+}
+
+```
+
+#### Step 2: Proposed Plan (LLM Output)
+
+Before any protected API is called, the system generates a deterministic execution plan and presents it for approval.
+
+```json
+{
+  "plan_id": "plan_42",
+  "steps": [
+    {
+      "action": "workday.get_pto_balance",
+      "params": {}
+    },
+    {
+      "action": "msgraph.check_calendar_availability",
+      "params": { "date": "2026-02-13" }
+    },
+    {
+      "action": "workday.book_time_off",
+      "params": { "dates": ["2026-02-13"] }
+    },
+    {
+      "action": "msgraph.create_event",
+      "params": { "title": "PTO", "date": "2026-02-13" }
+    }
+  ]
+}
+
+```
+
+**Human-in-the-Loop Checkpoint** The plan is paused at this stage until the user explicitly approves execution.
+
+#### Step 3: Policy Validation
+
+```json
+{
+  "policy_check": "PASS",
+  "rules_evaluated": [
+    "user_has_workday_access",
+    "pto_balance_sufficient",
+    "calendar_write_permission"
+  ]
+}
+
+```
+
+*If any policy fails, execution is halted before the first adapter call.*
+
+#### Step 4: Execution & State Transitions
+
+Each step is executed sequentially, with state persisted after every successful action.
+
+```json
+{
+  "state_transition": "EXECUTING → PROPOSED",
+  "checkpoint": "step_2_completed"
+}
+
+```
+
+**On failure, the system:**
+
+1. Rolls back to the last safe checkpoint.
+2. Attempts plan repair via `replan_on_failure`.
+3. Either resumes execution or fails fast with a full audit trail.
+
+#### Step 5: Final Result
+
+```json
+{
+  "status": "SUCCESS",
+  "reference_id": "PTO-REQ-123",
+  "audit_log_id": "AUDIT-789"
+}
+
+```
+
+---
+
+## Scope & Non-Goals
+
+This POC is intentionally focused on **safe agent orchestration patterns**, not full production integrations.
+
+### In Scope
+
+* **Agentic planning** with deterministic execution.
+* **Human-in-the-Loop** approval gates.
+* **Policy-as-code** enforcement.
+* **State persistence** and rollback.
+* **Self-correcting** execution loops.
+
+### Out of Scope
+
+* Real OAuth / token exchange.
+* Production LLM prompt optimization.
+* UI or conversational frontends.
+* Live enterprise system integrations.
+
+*Adapters and identity propagation are mocked by design to keep the focus on orchestration, safety, and control flow.*
+
