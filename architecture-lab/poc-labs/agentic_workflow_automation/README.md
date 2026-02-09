@@ -131,7 +131,8 @@ sequenceDiagram
 
 * **Human-in-the-Loop (HITL):** A mandatory confirmation step between the *Reasoning* and *Execution* phases.
 * **Identity Propagation:** Logic designed to carry user tokens through to adapters (mocked in this POC).
-* **State Awareness:** The orchestrator maintains a `StateStore` to handle multi-turn conversations (e.g., "Wait, move it to Monday instead").
+* **State Awareness:** The orchestrator maintains a `StateStore` to handle multi-turn conversations *(e.g., "Wait, move it to Monday instead").*  
+  *Note: The current POC uses an ephemeral in-memory store; the architecture is designed to swap this for Redis or PostgreSQL for production-grade persistence.*
 * **Policy-as-Code:** A dedicated engine that checks the generated plan against enterprise constraints before execution.
 
 ---
@@ -344,6 +345,7 @@ This POC is intentionally focused on **safe agent orchestration patterns**, not 
 * **Policy-as-code** enforcement.
 * **State persistence** and rollback.
 * **Self-correcting** execution loops.
+
 
 ### Out of Scope
 

@@ -6,6 +6,15 @@ from typing import Dict
 
 
 class StateStore:
+    """
+        In-memory implementation of the Agentic State Store.
+
+        ARCHITECTURAL NOTE: This is a thread-safe dictionary implementation for POC purposes.
+        In a production environment, this would be replaced by a persistent, distributed
+        store such as Redis or CosmosDB to support horizontal scaling and session
+        persistence across container restarts.
+    """
+
     def __init__(self):
         # session_id -> context
         self.storage: Dict[str, dict] = {}
