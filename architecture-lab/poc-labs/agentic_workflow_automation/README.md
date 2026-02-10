@@ -17,66 +17,53 @@ This POC demonstrates a structured orchestration layer that safely bridges LLM r
 This POC uses an Object-Oriented approach to separate intent classification from execution, ensuring the system is "Open/Closed"—new adapters can be added without modifying the core logic.
 
 ```mermaid
-classDiagram
-    class AgenticOrchestrator {
-        -IntentClassifier classifier
-        -TaskPlanner planner
-        -PolicyEngine policy_engine
-        -ExecutionEngine executor
-        -StateStore state
-        +process_request(user_input: str)
-    }
+flowchart TD
+    %% Incoming Applications
+    subgraph Apps[Applications / Services]
+        A[App Requests to LLM] -->|API Call| Router
+    end
 
-    class IntentClassifier {
-        +classify(text: str) Intent
-    }
+    %% Router / Control Plane
+    subgraph Router["FinOps LLM Router"]
+        direction TB
+        RouterEngine[Smart Routing Engine]
 
-    class TaskPlanner {
-        -LLMClient llm
-        +generate_plan(intent: Intent, state: dict) Plan
-    }
+        RouterEngine --> CostFirst[Cost-First - Lightweight Models]
+        RouterEngine --> PerfFirst[Performance-First - Frontier Models]
+        RouterEngine --> Failover[Operational Resilience - Failover]
 
-    class PolicyEngine {
-        +validate_plan(plan: Plan) bool
-        +check_permissions(user_id: str, action: str) bool
-    }
+        %% Models
+        CostFirst --> GPT4Mini[GPT-4o-mini]
+        CostFirst --> ClaudeHaiku[Claude Haiku]
 
-    class ExecutionEngine {
-        -list adapters
-        -AuditLogger logger
-        +run(plan: Plan) bool
-        +rollback(step_id: str)
-    }
+        PerfFirst --> GPT4[GPT-4]
+        PerfFirst --> Claude2[Claude 2]
+    end
 
-    class EnterpriseAdapter {
-        <<interface>>
-        +execute(action: str, params: dict) dict
-    }
+    %% Telemetry & Observability
+    subgraph Telemetry["Telemetry & Observability"]
+        direction TB
+        TelemetryPipeline[Async Request Response Capture]
+        TelemetryPipeline --> DataSink[Structured Data Sink - PostgreSQL or DuckDB]
+        DataSink --> Analytics[Business Outcome Analysis]
+        DataSink --> Dashboards[Grafana and Streamlit Dashboards]
+        Analytics --> SavingsAudit[Cost Avoidance and Drift Detection]
+    end
 
-    class WorkdayAdapter {
-        +get_pto_balance() float
-        +book_time_off(dates: list)
-    }
+    %% Connections
+    RouterEngine --> TelemetryPipeline
 
-    class MSGraphAdapter {
-        +check_calendar_availability(date: str) bool
-        +create_event(details: dict)
-    }
+    %% Paved Path / Enterprise Scale
+    subgraph Enterprise["Enterprise AI Platform"]
+        StandardAPI[Standardized Interfaces]
+        SelfService[Self-Service Routing Policies]
+        ADRLog[ADR Log in docs folder]
+    end
 
-    class StateStore {
-        -dict storage
-        +save_context(session_id: str, data: dict)
-        +get_context(session_id: str) dict
-    }
+    Apps --> Enterprise
+    RouterEngine --> Enterprise
+    TelemetryPipeline --> Enterprise
 
-    AgenticOrchestrator --> IntentClassifier
-    AgenticOrchestrator --> TaskPlanner
-    AgenticOrchestrator --> PolicyEngine
-    AgenticOrchestrator --> ExecutionEngine
-    ExecutionEngine --> EnterpriseAdapter
-    EnterpriseAdapter <|-- WorkdayAdapter
-    EnterpriseAdapter <|-- MSGraphAdapter
-    ExecutionEngine --> StateStore
 ```
 
 ---
