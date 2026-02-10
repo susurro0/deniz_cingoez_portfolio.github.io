@@ -37,52 +37,6 @@ flowchart TD
     end
 
     %% Router / Control Plane
-    subgraph Router["FinOps LLM Router (Control Plane)"]
-        direction TB
-        Router[Smart Routing Engine]
-
-        Router --> CostFirst[Cost-First: Lightweight Models]
-        Router --> PerfFirst[Performance-First: Frontier Models]
-        Router --> Failover[Operational Resilience / Failover]
-
-        %% Models
-        CostFirst --> GPT4Mini[GPT-4o-mini]
-        CostFirst --> ClaudeHaiku[Claude Haiku]
-
-        PerfFirst --> GPT4[GPT-4]
-        PerfFirst --> Claude2[Claude 2]
-    end
-
-    %% Telemetry & Observability
-    subgraph Telemetry["Telemetry & Economic Observability"]
-        direction TB
-        TelemetryPipeline[Async Request/Response Capture]
-        TelemetryPipeline --> DataSink[Structured Data Sink (PostgreSQL / DuckDB)]
-        DataSink --> Analytics[Business Outcome Analysis]
-        DataSink --> Dashboards[Grafana / Streamlit Dashboards]
-        Analytics --> SavingsAudit[Cost Avoidance / Drift Detection]
-    end
-
-    %% Connections
-    Router --> TelemetryPipeline
-
-    %% Paved Path / Enterprise Scale
-    subgraph Enterprise["Enterprise AI Platform"]
-        StandardAPI[Standardized Interfaces]
-        SelfService[Self-Service Routing Policies]
-        ADRLog[ADR Log: /docs]
-    end
-
-    Apps --> Enterprise
-    Router --> Enterprise
-    TelemetryPipeline --> Enterprise
-flowchart TD
-    %% Incoming Applications
-    subgraph Apps[Applications / Services]
-        A[App Requests to LLM] -->|API Call| Router
-    end
-
-    %% Router / Control Plane
     subgraph Router["FinOps LLM Router"]
         direction TB
         RouterEngine[Smart Routing Engine]
