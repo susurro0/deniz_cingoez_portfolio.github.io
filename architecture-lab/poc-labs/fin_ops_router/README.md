@@ -79,6 +79,28 @@ flowchart TD
 
 ```
 
+## Execution Flow
+
+The sequence diagram illustrates the lifecycle of a request through the FinOps LLM Router and Telemetry Engine:
+
+1. **Application Sends Request** – The app sends a prompt or task to the FinOps LLM Router.
+
+2. **Router Evaluates Strategy** – The router checks the Optimization Strategy configured for this type of task (Cost-First, Performance-First, or Failover).
+
+3. **Routing to LLM Model** –
+
+   - Cost-First: Sends routine tasks to lightweight models like GPT-4o-mini or Claude Haiku. 
+   - Performance-First: Sends complex or sensitive tasks to frontier models such as GPT-4 or Claude 2. 
+   - Failover: If a provider is down or throttled, the router automatically routes to an alternate provider (Anthropic, Bedrock).
+
+4. Model Returns Response – The selected LLM executes the task and returns the output, along with token usage statistics.
+
+5. Telemetry Capture – The router asynchronously sends the request and response data to the telemetry pipeline without impacting latency.
+
+6. Data Storage & Analysis – Telemetry is stored in structured data sinks (PostgreSQL or DuckDB) and analyzed to calculate business outcomes, cost avoidance, and drift detection.
+
+7. Dashboard Updates – Observability dashboards (Grafana, Streamlit) are updated in real time to provide visibility into AI usage, costs, and system health.
+
 ```mermaid
 sequenceDiagram
     participant App as Application
