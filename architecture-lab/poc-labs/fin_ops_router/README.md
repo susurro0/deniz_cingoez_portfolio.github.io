@@ -1,6 +1,6 @@
 # FinOps: Intelligent LLM Router & Telemetry Engine
 
-### The Problem: "Token Sprawl"
+## The Problem: "Token Sprawl"
 In most enterprises, LLM adoption starts as a "wild west." Developers naturally gravitate toward the most powerful models for every task, leading to skyrocketing costs without clear ROI. 
 
 **FinOps-Router** is a Control Plane for Generative AI. It stops "token sprawl" by treating AI usage as a measurable, optimizable business expense rather than an unmanaged utility.
@@ -31,32 +31,49 @@ Get real-time visibility into your AI "Burn Rate" before the bill arrives:
 
 ```mermaid
 flowchart TD
-    subgraph Root["fin_ops_router/"]
-        README[README.md - Project overview & docs]
-        Dash[dashboards/ - Grafana / Streamlit dashboards or SQL queries]
-        Deploy[deployments/ - Docker, docker-compose, Terraform manifests]
-        Docs[docs/ - ADRs, onboarding, config examples]
-        Scripts[scripts/ - Dev scripts: DB init, seed data, telemetry replay]
-        Src[src/ - Source code]
+    classDef core fill:#D0E6FF,stroke:#0366D6,stroke-width:1px
+    classDef support fill:#F3F3F3,stroke:#999,stroke-width:1px
+    classDef flow fill:#DFFFE0,stroke:#33A02C,stroke-width:1px
+
+    %% Root & Support Folders
+    subgraph Root["fin_ops_router"]
+        README[README.md - Overview & Docs]:::support
+        Dash[dashboards - Grafana / Streamlit]:::support
+        Deploy[deployments - Docker / Terraform]:::support
+        Docs[docs - ADRs & Onboarding]:::support
+        Scripts[scripts - Dev Utilities]:::support
+        Src[src - Source Code]:::core
     end
 
-    subgraph SrcFolder["src/"]
-        Main[main.py - FastAPI entrypoint]
-        Init[__init__.py]
-        App[finops_llm_router/ - Core router & modules]
+    %% Source Code
+    subgraph SrcFolder["src"]
+        Main[main.py - FastAPI Entry]:::core
+        App[finops_llm_router - Core Router & Modules]:::core
     end
 
-    subgraph AppFolder["finops_llm_router/"]
-        API[api/ - FastAPI app & routes]
-        Config[config/ - Application settings]
-        Guard[guardrails/ - Policy enforcement: PII, rate limits]
-        Models[models/ - Request/response models]
-        Orchestrator[orchestrator/ - Routing & orchestration logic]
-        Providers[providers/ - LLM adapters: OpenAI, etc.]
-        Telemetry[telemetry/ - Async request/response collectors]
-        Utils[utils/ - Logging, helpers, common functions]
+    %% Core Modules
+    subgraph AppFolder["finops_llm_router"]
+        API[api - Routes & FastAPI App]:::core
+        Config[config - App Settings]:::core
+        Guard[guardrails - Policy Enforcement]:::core
+        Models[models - Request/Response Models]:::core
+        Orchestrator[orchestrator - Routing Logic]:::core
+        Providers[providers - LLM Adapters]:::core
+        Telemetry[telemetry - Async Collectors]:::core
+        Utils[utils - Logging & Helpers]:::core
     end
 
+    %% Data Flow Layer
+    subgraph Flow["RequestDataFlow"]
+        Req[Client Request]:::flow
+        Route[Router Evaluates Optimization Strategy]:::flow
+        LLM[Selected LLM Provider]:::flow
+        Resp[Response Returned]:::flow
+        Capture[Telemetry Capture & Async Storage]:::flow
+        DashUpdate[Dashboards / Analytics Update]:::flow
+    end
+
+    %% Connections - Folder Structure
     Root --> Dash
     Root --> Deploy
     Root --> Docs
@@ -64,7 +81,6 @@ flowchart TD
     Root --> Src
 
     Src --> Main
-    Src --> Init
     Src --> App
 
     App --> API
@@ -75,6 +91,17 @@ flowchart TD
     App --> Providers
     App --> Telemetry
     App --> Utils
+
+    %% Connections - Request Flow
+    Req --> API
+    API --> Orchestrator
+    Orchestrator --> Guard
+    Orchestrator --> Providers
+    Providers --> LLM
+    LLM --> Resp
+    Resp --> API
+    API --> Capture
+    Capture --> DashUpdate
 
 ```
 
@@ -149,6 +176,15 @@ A Director's role is to reduce friction. This repository is designed as a templa
 
 ## Leadership & Contribution
 This POC serves as a reference implementation for engineering managers. By standardizing the "how" of LLM integration, we move from fragmented experimentation to a unified **Enterprise AI Platform strategy.**
+
+---
+
+## Strategic Overview:
+The FinOps LLM Router POC provides enterprise teams with a control plane for AI usage, turning LLM interactions into 
+measurable, optimizable business outcomes. By intelligently routing requests, capturing telemetry asynchronously, 
+and surfacing cost and performance insights, this system ensures operational resilience, cost efficiency, 
+and data-driven decision-making at scale. This POC demonstrates a repeatable, enterprise-ready template for 
+integrating multiple AI providers while maintaining control over spend and service quality.
 
 ---
 
