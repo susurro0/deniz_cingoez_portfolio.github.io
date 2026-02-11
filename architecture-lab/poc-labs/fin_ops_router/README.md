@@ -31,51 +31,50 @@ Get real-time visibility into your AI "Burn Rate" before the bill arrives:
 
 ```mermaid
 flowchart TD
-    %% Incoming Applications
-    subgraph Apps[Applications / Services]
-        A[App Requests to LLM] -->|API Call| Router
+    subgraph Root["fin_ops_router/"]
+        README[README.md - Project overview & docs]
+        Dash[dashboards/ - Grafana / Streamlit dashboards or SQL queries]
+        Deploy[deployments/ - Docker, docker-compose, Terraform manifests]
+        Docs[docs/ - ADRs, onboarding, config examples]
+        Scripts[scripts/ - Dev scripts: DB init, seed data, telemetry replay]
+        Src[src/ - Source code]
     end
 
-    %% Router / Control Plane
-    subgraph Router["FinOps LLM Router"]
-        direction TB
-        RouterEngine[Smart Routing Engine]
-
-        RouterEngine --> CostFirst[Cost-First: Lightweight Models]
-        RouterEngine --> PerfFirst[Performance-First: Frontier Models]
-        RouterEngine --> Failover[Operational Resilience / Failover]
-
-        %% Models
-        CostFirst --> GPT4Mini[GPT-4o-mini]
-        CostFirst --> ClaudeHaiku[Claude Haiku]
-
-        PerfFirst --> GPT4[GPT-4]
-        PerfFirst --> Claude2[Claude 2]
+    subgraph SrcFolder["src/"]
+        Main[main.py - FastAPI entrypoint]
+        Init[__init__.py]
+        App[finops_llm_router/ - Core router & modules]
     end
 
-    %% Telemetry & Observability
-    subgraph Telemetry["Telemetry & Observability"]
-        direction TB
-        TelemetryPipeline[Async Request/Response Capture]
-        TelemetryPipeline --> DataSink[Structured Data Sink: PostgreSQL / DuckDB]
-        DataSink --> Analytics[Business Outcome Analysis]
-        DataSink --> Dashboards[Grafana / Streamlit Dashboards]
-        Analytics --> SavingsAudit[Cost Avoidance & Drift Detection]
+    subgraph AppFolder["finops_llm_router/"]
+        API[api/ - FastAPI app & routes]
+        Config[config/ - Application settings]
+        Guard[guardrails/ - Policy enforcement: PII, rate limits]
+        Models[models/ - Request/response models]
+        Orchestrator[orchestrator/ - Routing & orchestration logic]
+        Providers[providers/ - LLM adapters: OpenAI, etc.]
+        Telemetry[telemetry/ - Async request/response collectors]
+        Utils[utils/ - Logging, helpers, common functions]
     end
 
-    %% Connections
-    RouterEngine --> TelemetryPipeline
+    Root --> Dash
+    Root --> Deploy
+    Root --> Docs
+    Root --> Scripts
+    Root --> Src
 
-    %% Paved Path / Enterprise Scale
-    subgraph Enterprise["Enterprise AI Platform"]
-        StandardAPI[Standardized Interfaces]
-        SelfService[Self-Service Routing Policies]
-        ADRLog[ADR Log in /docs]
-    end
+    Src --> Main
+    Src --> Init
+    Src --> App
 
-    Apps --> Enterprise
-    RouterEngine --> Enterprise
-    TelemetryPipeline --> Enterprise
+    App --> API
+    App --> Config
+    App --> Guard
+    App --> Models
+    App --> Orchestrator
+    App --> Providers
+    App --> Telemetry
+    App --> Utils
 
 ```
 
@@ -159,19 +158,25 @@ The FinOps LLM Router POC is organized to support scalable, enterprise-grade LLM
 
 ```mermaid
 fin_ops_router/
-├── cmd/
-│   └── server/             # Entry point for FastAPI or Go server
-├── internal/
-│   ├── router/             # Core routing logic (Cost vs Performance vs Failover)
-│   ├── providers/          # Adapters for LLM providers (OpenAI, Anthropic, Azure, Bedrock)
-│   ├── telemetry/          # Async collectors for request/response, token usage, and latency
-│   ├── guardrails/         # Policy enforcement: PII checks, prompt cost limits, rate limiting
-│   ├── config/             # Centralized app configuration (YAML/JSON/Env parsing)
-│   └── utils/              # Shared helpers (logging, error handling, common functions)
-├── deployments/            # Dockerfiles, docker-compose, Terraform manifests for Paved Path
-├── docs/                   # ADRs, mentoring guides, onboarding, routing config examples
-├── dashboards/             # SQL queries or Grafana/Streamlit JSON for monitoring and analytics
-├── tests/                  # Unit and integration tests for router, providers, telemetry
-└── scripts/                # Dev scripts (DB init, seed data, telemetry replay)
+├── README.md                # Project overview and documentation
+├── dashboards/              # Grafana / Streamlit dashboards or SQL queries
+├── deployments/             # Dockerfiles, docker-compose, Terraform manifests
+├── docs/                    # ADRs, onboarding guides, config examples
+├── scripts/                 # Dev scripts (DB init, seed data, telemetry replay)
+├── src/                     # Source code
+│   ├── __init__.py
+│   ├── main.py              # Entry point for FastAPI app
+│   └── finops_llm_router/
+│       ├── api/            # API endpoints
+│       │   └── routes/     # API route definitions
+│       ├── config/         # Configuration management
+│       ├── guardrails/     # Guardrails and policy enforcement
+│       ├── models/         # Data models and schemas
+│       ├── orchestrator/   # LLM orchestrator logic
+│       ├── providers/      # LLM provider adapters
+│       ├── telemetry/      # Telemetry and monitoring
+│       └── utils/          # Utility functions and helpers
+│           
+└── tests/                   # Unit and integration tests
 
 ```
