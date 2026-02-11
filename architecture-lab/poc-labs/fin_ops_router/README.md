@@ -152,3 +152,26 @@ A Director's role is to reduce friction. This repository is designed as a templa
 This POC serves as a reference implementation for engineering managers. By standardizing the "how" of LLM integration, we move from fragmented experimentation to a unified **Enterprise AI Platform strategy.**
 
 ---
+
+## Project Structure
+
+The FinOps LLM Router POC is organized to support scalable, enterprise-grade LLM integrations. Each folder serves a clear purpose, making it easy for teams to adopt, extend, and monitor usage.
+
+```mermaid
+fin_ops_router/
+├── cmd/
+│   └── server/             # Entry point for FastAPI or Go server
+├── internal/
+│   ├── router/             # Core routing logic (Cost vs Performance vs Failover)
+│   ├── providers/          # Adapters for LLM providers (OpenAI, Anthropic, Azure, Bedrock)
+│   ├── telemetry/          # Async collectors for request/response, token usage, and latency
+│   ├── guardrails/         # Policy enforcement: PII checks, prompt cost limits, rate limiting
+│   ├── config/             # Centralized app configuration (YAML/JSON/Env parsing)
+│   └── utils/              # Shared helpers (logging, error handling, common functions)
+├── deployments/            # Dockerfiles, docker-compose, Terraform manifests for Paved Path
+├── docs/                   # ADRs, mentoring guides, onboarding, routing config examples
+├── dashboards/             # SQL queries or Grafana/Streamlit JSON for monitoring and analytics
+├── tests/                  # Unit and integration tests for router, providers, telemetry
+└── scripts/                # Dev scripts (DB init, seed data, telemetry replay)
+
+```
