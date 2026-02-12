@@ -1,6 +1,6 @@
 # FinOps: Intelligent LLM Router & Telemetry Engine
 
-### The Problem: "Token Sprawl"
+## The Problem: "Token Sprawl"
 In most enterprises, LLM adoption starts as a "wild west." Developers naturally gravitate toward the most powerful models for every task, leading to skyrocketing costs without clear ROI. 
 
 **FinOps-Router** is a Control Plane for Generative AI. It stops "token sprawl" by treating AI usage as a measurable, optimizable business expense rather than an unmanaged utility.
@@ -31,51 +31,77 @@ Get real-time visibility into your AI "Burn Rate" before the bill arrives:
 
 ```mermaid
 flowchart TD
-    %% Incoming Applications
-    subgraph Apps[Applications / Services]
-        A[App Requests to LLM] -->|API Call| Router
+    classDef core fill:#D0E6FF,stroke:#0366D6,stroke-width:1px
+    classDef support fill:#F3F3F3,stroke:#999,stroke-width:1px
+    classDef flow fill:#DFFFE0,stroke:#33A02C,stroke-width:1px
+
+    %% Root & Support Folders
+    subgraph Root["fin_ops_router"]
+        README[README.md - Overview & Docs]:::support
+        Dash[dashboards - Grafana / Streamlit]:::support
+        Deploy[deployments - Docker / Terraform]:::support
+        Docs[docs - ADRs & Onboarding]:::support
+        Scripts[scripts - Dev Utilities]:::support
+        Src[src - Source Code]:::core
     end
 
-    %% Router / Control Plane
-    subgraph Router["FinOps LLM Router"]
-        direction TB
-        RouterEngine[Smart Routing Engine]
-
-        RouterEngine --> CostFirst[Cost-First: Lightweight Models]
-        RouterEngine --> PerfFirst[Performance-First: Frontier Models]
-        RouterEngine --> Failover[Operational Resilience / Failover]
-
-        %% Models
-        CostFirst --> GPT4Mini[GPT-4o-mini]
-        CostFirst --> ClaudeHaiku[Claude Haiku]
-
-        PerfFirst --> GPT4[GPT-4]
-        PerfFirst --> Claude2[Claude 2]
+    %% Source Code
+    subgraph SrcFolder["src"]
+        Main[main.py - FastAPI Entry]:::core
+        App[finops_llm_router - Core Router & Modules]:::core
     end
 
-    %% Telemetry & Observability
-    subgraph Telemetry["Telemetry & Observability"]
-        direction TB
-        TelemetryPipeline[Async Request/Response Capture]
-        TelemetryPipeline --> DataSink[Structured Data Sink: PostgreSQL / DuckDB]
-        DataSink --> Analytics[Business Outcome Analysis]
-        DataSink --> Dashboards[Grafana / Streamlit Dashboards]
-        Analytics --> SavingsAudit[Cost Avoidance & Drift Detection]
+    %% Core Modules
+    subgraph AppFolder["finops_llm_router"]
+        API[api - Routes & FastAPI App]:::core
+        Config[config - App Settings]:::core
+        Guard[guardrails - Policy Enforcement]:::core
+        Models[models - Request/Response Models]:::core
+        Orchestrator[orchestrator - Routing Logic]:::core
+        Providers[providers - LLM Adapters]:::core
+        Telemetry[telemetry - Async Collectors]:::core
+        Utils[utils - Logging & Helpers]:::core
     end
 
-    %% Connections
-    RouterEngine --> TelemetryPipeline
-
-    %% Paved Path / Enterprise Scale
-    subgraph Enterprise["Enterprise AI Platform"]
-        StandardAPI[Standardized Interfaces]
-        SelfService[Self-Service Routing Policies]
-        ADRLog[ADR Log in /docs]
+    %% Data Flow Layer
+    subgraph Flow["RequestDataFlow"]
+        Req[Client Request]:::flow
+        Route[Router Evaluates Optimization Strategy]:::flow
+        LLM[Selected LLM Provider]:::flow
+        Resp[Response Returned]:::flow
+        Capture[Telemetry Capture & Async Storage]:::flow
+        DashUpdate[Dashboards / Analytics Update]:::flow
     end
 
-    Apps --> Enterprise
-    RouterEngine --> Enterprise
-    TelemetryPipeline --> Enterprise
+    %% Connections - Folder Structure
+    Root --> Dash
+    Root --> Deploy
+    Root --> Docs
+    Root --> Scripts
+    Root --> Src
+
+    Src --> Main
+    Src --> App
+
+    App --> API
+    App --> Config
+    App --> Guard
+    App --> Models
+    App --> Orchestrator
+    App --> Providers
+    App --> Telemetry
+    App --> Utils
+
+    %% Connections - Request Flow
+    Req --> API
+    API --> Orchestrator
+    Orchestrator --> Guard
+    Orchestrator --> Providers
+    Providers --> LLM
+    LLM --> Resp
+    Resp --> API
+    API --> Capture
+    Capture --> DashUpdate
 
 ```
 
@@ -152,3 +178,41 @@ A Director's role is to reduce friction. This repository is designed as a templa
 This POC serves as a reference implementation for engineering managers. By standardizing the "how" of LLM integration, we move from fragmented experimentation to a unified **Enterprise AI Platform strategy.**
 
 ---
+
+## Strategic Overview:
+The FinOps LLM Router POC provides enterprise teams with a control plane for AI usage, turning LLM interactions into 
+measurable, optimizable business outcomes. By intelligently routing requests, capturing telemetry asynchronously, 
+and surfacing cost and performance insights, this system ensures operational resilience, cost efficiency, 
+and data-driven decision-making at scale. This POC demonstrates a repeatable, enterprise-ready template for 
+integrating multiple AI providers while maintaining control over spend and service quality.
+
+---
+
+## Project Structure
+
+The FinOps LLM Router POC is organized to support scalable, enterprise-grade LLM integrations. Each folder serves a clear purpose, making it easy for teams to adopt, extend, and monitor usage.
+
+```mermaid
+fin_ops_router/
+├── README.md                # Project overview and documentation
+├── dashboards/              # Grafana / Streamlit dashboards or SQL queries
+├── deployments/             # Dockerfiles, docker-compose, Terraform manifests
+├── docs/                    # ADRs, onboarding guides, config examples
+├── scripts/                 # Dev scripts (DB init, seed data, telemetry replay)
+├── src/                     # Source code
+│   ├── __init__.py
+│   ├── main.py              # Entry point for FastAPI app
+│   └── finops_llm_router/
+│       ├── api/            # API endpoints
+│       │   └── routes/     # API route definitions
+│       ├── config/         # Configuration management
+│       ├── guardrails/     # Guardrails and policy enforcement
+│       ├── models/         # Data models and schemas
+│       ├── orchestrator/   # LLM orchestrator logic
+│       ├── providers/      # LLM provider adapters
+│       ├── telemetry/      # Telemetry and monitoring
+│       └── utils/          # Utility functions and helpers
+│           
+└── tests/                   # Unit and integration tests
+
+```
