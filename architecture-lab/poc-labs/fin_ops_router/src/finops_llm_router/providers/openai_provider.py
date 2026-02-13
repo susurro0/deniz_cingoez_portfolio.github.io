@@ -6,6 +6,9 @@ from ..models.llm_result import LLMResult
 
 
 class OpenAIProvider(BaseProvider):
+
+    name = "openai"
+
     def __init__(self, api_key: str):
         self.api_key = api_key
         # Initialize client here (mock for POC)

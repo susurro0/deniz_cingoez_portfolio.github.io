@@ -2,5 +2,5 @@
 from .strategy import RoutingStrategy
 
 class PerformanceFirstStrategy(RoutingStrategy):
-    def select_provider(self, req, providers):
+    def select(self, req, providers):
         return providers["openai"], "GPT-4"

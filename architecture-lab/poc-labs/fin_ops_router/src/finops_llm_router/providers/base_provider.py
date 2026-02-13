@@ -8,6 +8,8 @@ from finops_llm_router.models.llm_result import LLMResult
 class BaseProvider(ABC):
     """Abstract Base Class for all LLM Providers."""
 
+    name: str
+
     @abstractmethod
     async def send_request(self, prompt: str, model: str) -> LLMResult:
         pass
