@@ -1,8 +1,12 @@
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 from pydantic import BaseModel
 
 class FinObsResponse(BaseModel):
-    prompt: str
-    response: str
-    model_type: str
+    id: str
+    content: str
+    model_used: str
+    provider: str
+    usage: Dict[str, int]  # input_tokens, output_tokens
+    cost_estimated: float
+    latency_ms: float
 

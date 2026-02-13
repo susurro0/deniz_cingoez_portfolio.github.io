@@ -6,79 +6,72 @@ from finops_llm_router.models.fin_obs_response import FinObsResponse
 
 def test_finobs_response_valid():
     res = FinObsResponse(
-        prompt="Explain FinOps",
-        response="FinOps is cloud financial management.",
-        model_type="gpt-4"
+        id="123",
+        content="processed text",
+        model_used="gpt-4",
+        provider="openai",
+        usage={"input_tokens": 10, "output_tokens": 5},
+        cost_estimated=0.001,
+        latency_ms=12.5,
     )
 
-    assert res.prompt == "Explain FinOps"
-    assert res.response == "FinOps is cloud financial management."
-    assert res.model_type == "gpt-4"
+    assert res.id == "123"
+    assert res.content == "processed text"
+    assert res.model_used == "gpt-4"
+    assert res.provider == "openai"
+    assert res.usage == {"input_tokens": 10, "output_tokens": 5}
+    assert res.cost_estimated == 0.001
+    assert res.latency_ms == 12.5
 
 
-def test_finobs_response_missing_prompt():
+def test_finobs_response_missing_required_fields():
     with pytest.raises(ValidationError):
         FinObsResponse(
-            response="ok",
-            model_type="gpt-4"
+            id="123",
+            content="ok",
+            model_used="gpt-4",
+            provider="openai",
+            # missing usage, cost_estimated, latency_ms
         )
 
 
-def test_finobs_response_missing_response():
+def test_finobs_response_wrong_type_usage():
     with pytest.raises(ValidationError):
         FinObsResponse(
-            prompt="hello",
-            model_type="gpt-4"
+            id="123",
+            content="ok",
+            model_used="gpt-4",
+            provider="openai",
+            usage="not-a-dict",
+            cost_estimated=0.1,
+            latency_ms=10.0,
         )
 
 
-def test_finobs_response_missing_model_type():
+def test_finobs_response_wrong_type_cost_estimated():
     with pytest.raises(ValidationError):
         FinObsResponse(
-            prompt="hello",
-            response="ok"
+            id="123",
+            content="ok",
+            model_used="gpt-4",
+            provider="openai",
+            usage={"input_tokens": 1, "output_tokens": 1},
+            cost_estimated="not-a-float",
+            latency_ms=10.0,
         )
 
 
-def test_finobs_response_wrong_type_prompt():
+def test_finobs_response_wrong_type_latency_ms():
     with pytest.raises(ValidationError):
         FinObsResponse(
-            prompt=123,
-            response="ok",
-            model_type="gpt-4"
+            id="123",
+            content="ok",
+            model_used="gpt-4",
+            provider="openai",
+            usage={"input_tokens": 1, "output_tokens": 1},
+            cost_estimated=0.1,
+            latency_ms="not-a-float",
         )
 
 
-def test_finobs_response_wrong_type_response():
-    with pytest.raises(ValidationError):
-        FinObsResponse(
-            prompt="hello",
-            response=999,
-            model_type="gpt-4"
-        )
 
-
-def test_finobs_response_wrong_type_model_type():
-    with pytest.raises(ValidationError):
-        FinObsResponse(
-            prompt="hello",
-            response="ok",
-            model_type=123
-        )
-
-
-def test_finobs_response_allows_extra_fields():
-    """
-    FinObsResponse uses Pydantic's default behavior: extra='ignore'.
-    Extra fields are accepted and stored.
-    """
-    res = FinObsResponse(
-        prompt="hi",
-        response="ok",
-        model_type="gpt-4",
-        extra_field="ignored"
-    )
-
-    assert res.prompt == "hi"
-    assert res.response == "ok"
-    assert res.model_type == "gpt-4"

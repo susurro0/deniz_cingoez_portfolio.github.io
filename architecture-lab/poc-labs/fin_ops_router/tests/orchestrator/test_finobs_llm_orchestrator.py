@@ -14,6 +14,22 @@ def mock_guardrails():
 
 
 @pytest.fixture
+def mock_strategy():
+    strategy = MagicMock()
+    # Will be overridden in individual tests
+    strategy.select = MagicMock()
+    return strategy
+
+
+@pytest.fixture
+def mock_provider():
+    provider = MagicMock()
+    provider.name = "openai"
+    provider.send_request = AsyncMock(return_value="processed text")
+    return provider
+
+
+@pytest.fixture
 def mock_telemetry():
     tel = MagicMock()
     tel.capture = AsyncMock()
@@ -21,18 +37,27 @@ def mock_telemetry():
 
 
 @pytest.fixture
-def orchestrator(mock_guardrails, mock_telemetry):
-    orch = FinObsLLMOrchestrator(
+def orchestrator(mock_guardrails, mock_provider, mock_strategy, mock_telemetry):
+    providers = {"openai": mock_provider}
+    return FinObsLLMOrchestrator(
         guardrails=mock_guardrails,
-        telemetry=mock_telemetry
+        providers=providers,
+        strategy=mock_strategy,
+        telemetry=mock_telemetry,
     )
-    orch.providers["openai"].send_request = AsyncMock(return_value="processed text")
-    return orch
 
 
 @pytest.mark.asyncio
-async def test_handle_success_default_model(orchestrator, mock_telemetry):
-    req = FinObsRequest(prompt="hello", model_type="openai")
+async def test_handle_success(orchestrator, mock_strategy, mock_provider, mock_telemetry):
+    req = FinObsRequest(
+        prompt="hello",
+        task_type="summarization",
+        priority="cost",
+        metadata={}
+    )
+
+    # Strategy chooses provider + model
+    mock_strategy.select.return_value = (mock_provider, "GPT-4")
 
     result = await orchestrator.handle(req)
 
@@ -41,38 +66,39 @@ async def test_handle_success_default_model(orchestrator, mock_telemetry):
     assert result.response == "processed text"
     assert result.model_type == "GPT-4"
 
-    orchestrator.providers["openai"].send_request.assert_awaited_once_with(
-        "hello", "GPT-4"
-    )
-    mock_telemetry.capture.assert_awaited_once()
-
-
-@pytest.mark.asyncio
-async def test_handle_cost_model_uses_gpt4o_mini(orchestrator):
-    req = FinObsRequest(prompt="hello", model_type="cost")
-
-    result = await orchestrator.handle(req)
-
-    assert result.model_type == "GPT-4o-mini"
-    orchestrator.providers["openai"].send_request.assert_awaited_once_with(
-        "hello", "GPT-4o-mini"
+    mock_strategy.select.assert_called_once_with(req, orchestrator.providers)
+    mock_provider.send_request.assert_awaited_once_with(prompt="hello", model="GPT-4")
+    mock_telemetry.capture.assert_awaited_once_with(
+        prompt="hello",
+        response="processed text",
+        model_used="GPT-4",
+        provider="openai",
     )
 
 
 @pytest.mark.asyncio
-async def test_handle_guardrail_failure(mock_telemetry):
+async def test_handle_guardrail_failure(mock_strategy, mock_provider, mock_telemetry):
     guard = MagicMock()
     guard.validate.return_value = False
 
     orch = FinObsLLMOrchestrator(
         guardrails=guard,
-        telemetry=mock_telemetry
+        providers={"openai": mock_provider},
+        strategy=mock_strategy,
+        telemetry=mock_telemetry,
     )
 
-    req = FinObsRequest(prompt="bad", model_type="openai")
+    req = FinObsRequest(
+        prompt="blocked",
+        task_type="general",
+        priority="cost",
+        metadata={}
+    )
 
     with pytest.raises(ValueError):
         await orch.handle(req)
+
+    guard.validate.assert_called_once_with("blocked")
 
 
 def test_list_providers(orchestrator):
