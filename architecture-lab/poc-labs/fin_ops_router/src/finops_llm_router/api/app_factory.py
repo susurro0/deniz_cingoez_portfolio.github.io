@@ -5,7 +5,11 @@ from fastapi import FastAPI
 
 from finops_llm_router.api.routes.fin_obs_routes import FinObsRoutes
 from finops_llm_router.guardrails.guardrails import Guardrails
+from finops_llm_router.orchestrator.cost_first_strategy import CostFirstStrategy
 from finops_llm_router.orchestrator.finobs_llm_orchestrator import FinObsLLMOrchestrator
+from finops_llm_router.orchestrator.performance_first_strategy import PerformanceFirstStrategy
+from finops_llm_router.providers.anthropic_provider import AnthropicProvider
+from finops_llm_router.providers.openai_provider import OpenAIProvider
 from finops_llm_router.telemetry.collector import TelemetryCollector
 
 
@@ -19,9 +23,15 @@ class AppFactory:
 
     @asynccontextmanager
     async def lifespan(self, app: FastAPI):
+        self.providers = {
+            "openai": OpenAIProvider(api_key="..."),
+            "anthropic": AnthropicProvider(api_key="..."),
+        }
         self.orchestrator = FinObsLLMOrchestrator(
             guardrails=Guardrails(),
-            telemetry=TelemetryCollector()
+            providers=self.providers,
+            telemetry=TelemetryCollector(),
+
         )
 
         self._register_routes()
