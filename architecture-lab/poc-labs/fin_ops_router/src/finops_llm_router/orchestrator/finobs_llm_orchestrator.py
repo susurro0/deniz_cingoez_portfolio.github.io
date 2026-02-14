@@ -37,52 +37,49 @@ class FinObsLLMOrchestrator:
         if not self.guardrails.validate(req.prompt):
             raise ValueError("Guardrail check failed")
 
-        # 2. Select routing strategy (FIXED)
+        # 2. Strategy selection
         strategy = self.strategies.get(req.priority.lower())
         if not strategy:
             raise ValueError(f"Unknown routing strategy: {req.priority}")
 
-        provider, model_name = strategy.select(req, self.providers)
+        # 3. Select providers order from strategy
+        ordered_providers = strategy.rank_providers(req, self.providers)
 
-        # 3. Failover: check if provider is healthy
-        if not await provider.health_check():
-            # Find first alternative provider that is healthy
-            for alt_name, alt_provider in self.providers.items():
-                if alt_provider != provider and await alt_provider.health_check():
-                    provider = alt_provider
-                    break
-            else:
-                raise RuntimeError("No healthy providers available")
+        last_exception = None
+        for provider in ordered_providers:
+            try:
+                model_name = strategy.select_model(req, provider)
+                start_time = perf_counter()
+                llm_result = await provider.send_request(prompt=req.prompt, model=model_name)
+                latency_ms = (perf_counter() - start_time) * 1000
 
+                # 4. Telemetry
+                await self.telemetry.capture(
+                    request_id=req.id,
+                    provider=provider.name,
+                    model=model_name,
+                    usage=llm_result.usage,
+                    cost_estimated=llm_result.cost_estimated,
+                    latency_ms=latency_ms,
+                )
+                # 5. Return unified response
+                return FinObsResponse(
+                    id=str(uuid.uuid4()),
+                    content=llm_result.content,
+                    model_used=model_name,                        provider=provider.name,
+                    usage=llm_result.usage,
+                    cost_estimated=llm_result.cost_estimated,
+                    latency_ms=latency_ms,
+                )
 
-        # 4. Execute request + measure latency
-        start_time = perf_counter()
-        llm_result = await provider.send_request(
-            prompt=req.prompt,
-            model=model_name,
-        )
-        latency_ms = (perf_counter() - start_time) * 1000
+            except Exception as e:
+                # Log the failure and try next provider
+                print(f"[Orchestrator] Provider {provider} failed: {e}")
+                last_exception = e
+                continue
 
-        # 5. Async telemetry (FIXED)
-        await self.telemetry.capture(
-            request_id=req.metadata.get("request_id", str(uuid.uuid4())),
-            provider=provider.name,
-            model=model_name,
-            usage=llm_result.usage,
-            cost_estimated=llm_result.cost_estimated,
-            latency_ms=latency_ms,
-        )
-
-        # 6. Unified FinOps response (FIXED)
-        return FinObsResponse(
-            id=str(uuid.uuid4()),
-            content=llm_result.content,
-            model_used=model_name,
-            provider=provider.name,
-            usage=llm_result.usage,
-            cost_estimated=llm_result.cost_estimated,
-            latency_ms=latency_ms,
-        )
+        # 6. If all providers fail
+        raise RuntimeError(f"All providers failed. Last error: {last_exception}")
 
     def list_providers(self):
         return list(self.providers.keys())

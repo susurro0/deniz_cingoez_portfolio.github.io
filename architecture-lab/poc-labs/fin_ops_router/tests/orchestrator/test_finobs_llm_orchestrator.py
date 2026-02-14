@@ -4,67 +4,48 @@ from unittest.mock import MagicMock, AsyncMock
 from finops_llm_router.models.llm_result import LLMResult
 from finops_llm_router.orchestrator.finobs_llm_orchestrator import FinObsLLMOrchestrator
 from finops_llm_router.models.fin_obs_request import FinObsRequest
-from finops_llm_router.models.fin_obs_response import FinObsResponse
 
+
+# ----------------------------------------------------------------------
+# Fixtures
+# ----------------------------------------------------------------------
 
 @pytest.fixture
-def mock_guardrails():
+def mock_guard():
     guard = MagicMock()
     guard.validate.return_value = True
     return guard
 
 
 @pytest.fixture
-def mock_strategy():
-    strategy = MagicMock()
-    strategy.select = MagicMock()
-    return strategy
-
-
-@pytest.fixture
 def mock_provider():
     provider = MagicMock()
     provider.name = "openai"
-    provider.send_request = AsyncMock(
-        return_value=LLMResult(
-            content="processed text",
-            usage={"input_tokens": 5, "output_tokens": 15},
-            cost_estimated=0.002,
-        )
-    )
-    provider.health_check = AsyncMock(return_value=True)
     return provider
 
 
 @pytest.fixture
 def mock_telemetry():
-    tel = MagicMock()
-    tel.capture = AsyncMock()
-    return tel
+    telemetry = MagicMock()
+    telemetry.capture = AsyncMock()
+    return telemetry
 
 
 @pytest.fixture
-def orchestrator(mock_guardrails, mock_provider, mock_telemetry):
-    providers = {"openai": mock_provider}
-    return FinObsLLMOrchestrator(
-        guardrails=mock_guardrails,
-        providers=providers,
-        telemetry=mock_telemetry,
-    )
+def fake_llm_result():
+    result = MagicMock()
+    result.content = "response-content"
+    result.usage = {"tokens": 10}
+    result.cost_estimated = 0.001
+    return result
 
-@pytest.fixture
-def req():
-    return FinObsRequest(
-        id="req-1",
-        prompt="hello",
-        task_type="summarization",
-        priority="cost",
-        metadata={},
-        model_type="openai"
-    )
+
+# ----------------------------------------------------------------------
+# 1. Guardrail failure
+# ----------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_handle_guardrail_failure(mock_strategy, mock_provider, mock_telemetry):
+async def test_handle_guardrail_failure(mock_provider, mock_telemetry):
     guard = MagicMock()
     guard.validate.return_value = False
 
@@ -87,131 +68,211 @@ async def test_handle_guardrail_failure(mock_strategy, mock_provider, mock_telem
     guard.validate.assert_called_once_with("blocked")
 
 
-def test_list_providers(orchestrator):
-    assert orchestrator.list_providers() == ["openai"]
+# ----------------------------------------------------------------------
+# 2. Unknown strategy
+# ----------------------------------------------------------------------
 
 @pytest.mark.asyncio
-async def test_handle_cost_request(orchestrator, mock_provider, mock_telemetry):
-    from finops_llm_router.models.fin_obs_request import FinObsRequest
+async def test_handle_unknown_strategy(mock_guard, mock_provider, mock_telemetry):
+    orch = FinObsLLMOrchestrator(
+        guardrails=mock_guard,
+        providers={"openai": mock_provider},
+        telemetry=mock_telemetry,
+    )
 
-    request = FinObsRequest(
-        prompt="Hello world",
+    req = FinObsRequest(
+        prompt="hello",
         task_type="general",
-        priority="cost",
-        metadata={"request_id": "test-1"},
+        priority="invalid",
+        metadata={}
     )
 
-    response = await orchestrator.handle(request)
-
-    assert response.content == "processed text"
-    assert response.provider == "openai"
-    assert response.usage["input_tokens"] == 5
-    assert response.cost_estimated == 0.002
-
-    mock_provider.send_request.assert_awaited_once()
-    mock_telemetry.capture.assert_awaited_once()
-
-@pytest.mark.asyncio
-async def test_handle_unknown_strategy_raises(orchestrator):
-    # Arrange: request with a priority that doesn't exist
-    request = FinObsRequest(
-        prompt="Some text",
-        task_type="general",
-        priority="nonexistent",  # This should trigger the error
-        metadata={"request_id": "test-unknown"},
-    )
-
-    # Act & Assert: ensure ValueError is raised
-    with pytest.raises(ValueError) as exc_info:
-        await orchestrator.handle(request)
-
-    assert "Unknown routing strategy" in str(exc_info.value)
-
-
-@pytest.mark.asyncio
-async def test_no_failover_when_primary_healthy(mock_strategy, mock_telemetry, req):
-    # Primary provider
-    primary = MagicMock()
-    primary.name = "openai"
-    primary.health_check = AsyncMock(return_value=True)
-    primary.send_request = AsyncMock(
-        return_value=LLMResult(
-            content="ok",
-            usage={"input_tokens": 1, "output_tokens": 1},
-            cost_estimated=0.001,
-        )
-    )
-
-    providers = {"openai": primary}
-
-    orch = FinObsLLMOrchestrator(
-        guardrails=MagicMock(validate=lambda _: True),
-        providers=providers,
-        telemetry=mock_telemetry,
-    )
-
-    mock_strategy.select.return_value = (primary, "GPT-4")
-
-    result = await orch.handle(req)
-
-    assert result.provider == "openai"
-    primary.send_request.assert_awaited_once()
-    primary.health_check.assert_awaited_once()
-
-@pytest.mark.asyncio
-async def test_failover_to_healthy_alternative(mock_strategy, mock_telemetry, req):
-    primary = MagicMock()
-    primary.name = "openai"
-    primary.health_check = AsyncMock(return_value=False)
-
-    healthy_alt = MagicMock()
-    healthy_alt.name = "anthropic"
-    healthy_alt.health_check = AsyncMock(return_value=True)
-    healthy_alt.send_request = AsyncMock(
-        return_value=LLMResult(
-            content="alt-ok",
-            usage={"input_tokens": 2, "output_tokens": 2},
-            cost_estimated=0.002,
-        )
-    )
-
-    providers = {"openai": primary, "anthropic": healthy_alt}
-
-    orch = FinObsLLMOrchestrator(
-        guardrails=MagicMock(validate=lambda _: True),
-        providers=providers,
-        telemetry=mock_telemetry,
-    )
-
-    mock_strategy.select.return_value = (primary, "GPT-4")
-
-    result = await orch.handle(req)
-
-    assert result.provider == "anthropic"
-    healthy_alt.send_request.assert_awaited_once()
-    primary.send_request.assert_not_called()
-
-@pytest.mark.asyncio
-async def test_failover_no_healthy_providers_raises(mock_strategy, mock_telemetry, req):
-    primary = MagicMock()
-    primary.name = "openai"
-    primary.health_check = AsyncMock(return_value=False)
-
-    alt = MagicMock()
-    alt.name = "anthropic"
-    alt.health_check = AsyncMock(return_value=False)
-
-    providers = {"openai": primary, "anthropic": alt}
-
-    orch = FinObsLLMOrchestrator(
-        guardrails=MagicMock(validate=lambda _: True),
-        providers=providers,
-        telemetry=mock_telemetry,
-    )
-
-    mock_strategy.select.return_value = (primary, "GPT-4")
-
-    with pytest.raises(RuntimeError, match="No healthy providers available"):
+    with pytest.raises(ValueError):
         await orch.handle(req)
 
 
+# ----------------------------------------------------------------------
+# 3. Cost request (your requested test)
+# ----------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_handle_cost_request(
+    mock_guard,
+    mock_provider,
+    mock_telemetry,
+):
+    # Arrange
+    fake_llm_result = LLMResult(
+        content="response-content",
+        usage={"input_tokens": 5, "output_tokens": 5},
+        cost_estimated=0.001,
+    )
+
+    mock_provider.send_request = AsyncMock(return_value=fake_llm_result)
+
+    orch = FinObsLLMOrchestrator(
+        guardrails=mock_guard,
+        providers={"openai": mock_provider},
+        telemetry=mock_telemetry,
+    )
+
+    # Override the cost strategy behavior
+    cost_strategy = orch.strategies["cost"]
+    cost_strategy.rank_providers = MagicMock(return_value=[mock_provider])
+    cost_strategy.select_model = MagicMock(return_value="gpt-cost-mini")
+
+    req = FinObsRequest(
+        prompt="hello",
+        task_type="general",
+        priority="cost",
+        metadata={},
+    )
+
+    # Act
+    resp = await orch.handle(req)
+
+    # Assert — guardrails
+    mock_guard.validate.assert_called_once_with("hello")
+
+    # Assert — strategy
+    cost_strategy.rank_providers.assert_called_once_with(req, {"openai": mock_provider})
+    cost_strategy.select_model.assert_called_once_with(req, mock_provider)
+
+    # Assert — provider call
+    mock_provider.send_request.assert_called_once_with(
+        prompt="hello",
+        model="gpt-cost-mini",
+    )
+
+    # Assert — telemetry
+    mock_telemetry.capture.assert_called_once()
+    telemetry_kwargs = mock_telemetry.capture.call_args.kwargs
+    assert telemetry_kwargs["provider"] == "openai"
+    assert telemetry_kwargs["model"] == "gpt-cost-mini"
+
+    # Assert — response
+    assert resp.content == "response-content"
+    assert resp.model_used == "gpt-cost-mini"
+    assert resp.provider == "openai"
+    assert resp.usage == {"input_tokens": 5, "output_tokens": 5}
+    assert resp.cost_estimated == 0.001
+    assert isinstance(resp.latency_ms, float)
+
+# ----------------------------------------------------------------------
+# 4. Failover: first provider fails, second succeeds
+# ----------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_handle_failover_to_second_provider(mock_guard, mock_telemetry, fake_llm_result):
+    p1 = AsyncMock()
+    p1.name = "p1"
+    p1.send_request.side_effect = Exception("boom")
+
+    p2 = AsyncMock()
+    p2.name = "p2"
+    p2.send_request.return_value = fake_llm_result
+
+    strategy = MagicMock()
+    strategy.rank_providers.return_value = [p1, p2]
+    strategy.select_model.return_value = "gpt-test"
+
+    orch = FinObsLLMOrchestrator(
+        guardrails=mock_guard,
+        providers={"p1": p1, "p2": p2},
+        telemetry=mock_telemetry,
+    )
+    orch.strategies = {"cost": strategy}
+
+    req = FinObsRequest(
+        id="test-id",
+        prompt="hello",
+        task_type="general",
+        priority="cost",
+        metadata={}
+    )
+
+    resp = await orch.handle(req)
+
+    assert resp.provider == "p2"
+    assert p1.send_request.called
+    assert p2.send_request.called
+
+
+# ----------------------------------------------------------------------
+# 5. All providers fail
+# ----------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_handle_all_providers_fail(mock_guard, mock_telemetry):
+    p1 = MagicMock()
+    p1.name = "p1"
+    p1.send_request.side_effect = Exception("fail1")
+
+    p2 = MagicMock()
+    p2.name = "p2"
+    p2.send_request.side_effect = Exception("fail2")
+
+    strategy = MagicMock()
+    strategy.rank_providers.return_value = [p1, p2]
+    strategy.select_model.return_value = "gpt-test"
+
+    orch = FinObsLLMOrchestrator(
+        guardrails=mock_guard,
+        providers={"p1": p1, "p2": p2},
+        telemetry=mock_telemetry,
+    )
+    orch.strategies = {"cost": strategy}
+
+    req = FinObsRequest(
+        prompt="hello",
+        task_type="general",
+        priority="cost",
+        metadata={}
+    )
+
+    with pytest.raises(RuntimeError):
+        await orch.handle(req)
+
+
+# ----------------------------------------------------------------------
+# 6. Telemetry is called
+# ----------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_handle_telemetry_called(mock_guard, mock_provider, mock_telemetry, fake_llm_result):
+    mock_provider.send_request = AsyncMock(return_value=fake_llm_result)
+    strategy = MagicMock()
+    strategy.rank_providers.return_value = [mock_provider]
+    strategy.select_model.return_value = "gpt-test"
+
+    orch = FinObsLLMOrchestrator(
+        guardrails=mock_guard,
+        providers={"openai": mock_provider},
+        telemetry=mock_telemetry,
+    )
+    orch.strategies = {"cost": strategy}
+
+    req = FinObsRequest(
+        prompt="hello",
+        task_type="general",
+        priority="cost",
+        metadata={}
+    )
+
+    await orch.handle(req)
+
+    assert mock_telemetry.capture.called
+
+
+# ----------------------------------------------------------------------
+# 7. list_providers
+# ----------------------------------------------------------------------
+
+def test_list_providers(mock_guard, mock_telemetry):
+    orch = FinObsLLMOrchestrator(
+        guardrails=mock_guard,
+        providers={"a": MagicMock(), "b": MagicMock()},
+        telemetry=mock_telemetry,
+    )
+
+    assert orch.list_providers() == ["a", "b"]

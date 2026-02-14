@@ -39,9 +39,10 @@ async def test_valid_strategy_selects_provider_and_model():
 
     # Valid strategy implementation
     class GoodStrategy(RoutingStrategy):
-        def select(self, req, providers):
-            return providers["dummy"], "gpt-4"
-
+        def select_model(self, req, provider):
+            return "gpt-4"
+        def rank_providers(self, req, providers):
+            return [providers.get("dummy")]
     strategy = GoodStrategy()
 
     req = FinObsRequest(
@@ -53,9 +54,8 @@ async def test_valid_strategy_selects_provider_and_model():
         model_type="dummy"
     )
 
-    selected_provider, model_name = strategy.select(req, providers)
+    model_name = strategy.select_model(req, provider)
 
-    assert selected_provider is provider
     assert model_name == "gpt-4"
 
 class DummyProvider(BaseProvider):
@@ -78,10 +78,11 @@ def test_routing_strategy_pass_coverage():
     """
 
     class MinimalStrategy(RoutingStrategy):
-        def select(self, req, providers):
+        def select_model(self, req, provider):
             # This will execute the `pass` in RoutingStrategy.select
-            return super().select(req, providers)
-
+            return super().select_model(req, provider)
+        def rank_providers(self, req, providers):
+            return super().rank_providers(req, providers)
     # Bypass ABC __init__ by using __new__
     strategy = MinimalStrategy.__new__(MinimalStrategy)
 
@@ -96,7 +97,8 @@ def test_routing_strategy_pass_coverage():
     providers = {"dummy": DummyProvider()}
 
     # This will run the base class `select` body (which is just `pass`)
-    result = MinimalStrategy.select(strategy, req, providers)
-
+    select_model = MinimalStrategy.select_model(strategy, req, providers['dummy'])
+    rank_providers = MinimalStrategy.rank_providers(strategy, req, providers)
     # `pass` returns None, so we just assert that we reached this point
-    assert result is None
+    assert select_model is None
+    assert rank_providers is None
