@@ -56,6 +56,7 @@ class FinObsLLMOrchestrator:
                 # 4. Telemetry
                 await self.telemetry.capture(
                     request_id=req.id,
+                    strategy=strategy.name,
                     provider=provider.name,
                     model=model_name,
                     usage=llm_result.usage,

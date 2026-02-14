@@ -7,6 +7,8 @@ from ..providers.base_provider import BaseProvider
 
 
 class CostFirstStrategy(RoutingStrategy):
+    name = "cost-first"
+
     def rank_providers(self, req: FinObsRequest, providers: Dict[str, BaseProvider]) -> List[BaseProvider]:
         # Prefer cheaper providers first
         return [providers["openai"], providers.get("anthropic"), providers.get("bedrock")]

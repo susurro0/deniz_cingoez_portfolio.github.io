@@ -7,7 +7,7 @@ from finops_llm_router.providers.base_provider import BaseProvider
 
 class RoutingStrategy(ABC):
     """Defines how a provider + model are selected."""
-
+    name: str
     @abstractmethod
     def select_model(self, req: FinObsRequest, provider: BaseProvider) -> str:
         """Return model name for this provider and request"""

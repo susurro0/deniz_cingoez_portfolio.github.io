@@ -18,6 +18,7 @@ class TelemetryCollector:
             CREATE TABLE IF NOT EXISTS telemetry (
                 timestamp TIMESTAMP,
                 request_id VARCHAR,
+                strategy VARCHAR,
                 provider VARCHAR,
                 model VARCHAR,
                 usage_input INT,
@@ -30,6 +31,7 @@ class TelemetryCollector:
     async def capture(
         self,
         request_id: str,
+        strategy: str,
         provider: str,
         model: str,
         usage: Dict[str, int],
@@ -44,11 +46,13 @@ class TelemetryCollector:
 
         self.conn.execute(
             """
-            INSERT INTO telemetry VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO telemetry 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 datetime.utcnow(),
                 request_id,
+                strategy,
                 provider,
                 model,
                 usage.get("input_tokens", 0),
@@ -57,10 +61,9 @@ class TelemetryCollector:
                 latency_ms,
             )
         )
-
         # Console/log visualization (Director-friendly)
         print(
-            f"[Telemetry] {datetime.utcnow().isoformat()} | "
+            f"[Telemetry] {datetime.utcnow().isoformat()} | strategy={strategy} | "
             f"request_id={request_id} | provider={provider} | model={model} | "
             f"input_tokens={usage.get('input_tokens', 0)} | "
             f"output_tokens={usage.get('output_tokens', 0)} | "

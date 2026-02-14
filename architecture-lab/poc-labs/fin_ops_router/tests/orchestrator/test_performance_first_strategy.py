@@ -95,6 +95,6 @@ def test_performance_first_strategy_handles_missing_providers():
     )
 
     ranked = strategy.rank_providers(req, providers)
-
+    assert strategy.name == "performance-first"
     # Missing providers become None, but openai is always last
     assert ranked == [None, None, providers["openai"]]

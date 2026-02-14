@@ -94,7 +94,7 @@ def test_cost_first_strategy_handles_missing_providers():
     )
 
     ranked = strategy.rank_providers(req, providers)
-
+    assert strategy.name == 'cost-first'
     # Missing providers become None
     assert ranked == [
         providers["openai"],  # always first

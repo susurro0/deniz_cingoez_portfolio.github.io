@@ -13,6 +13,7 @@ def collector():
 async def test_capture_inserts_into_duckdb(collector):
     await collector.capture(
         request_id="req-123",
+        strategy="cost-first",
         provider="openai",
         model="gpt-4",
         usage={"input_tokens": 10, "output_tokens": 5},
@@ -27,12 +28,13 @@ async def test_capture_inserts_into_duckdb(collector):
 
     # timestamp is row[0] → don't assert exact value
     assert row[1] == "req-123"
-    assert row[2] == "openai"
-    assert row[3] == "gpt-4"
-    assert row[4] == 10
-    assert row[5] == 5
-    assert row[6] == 0.003
-    assert row[7] == 12.34
+    assert row[2] == "cost-first"
+    assert row[3] == "openai"
+    assert row[4] == "gpt-4"
+    assert row[5] == 10
+    assert row[6] == 5
+    assert row[7] == 0.003
+    assert row[8] == 12.34
 
 
 @pytest.mark.asyncio
@@ -47,6 +49,7 @@ async def test_capture_awaits_sleep(monkeypatch, collector):
 
     await collector.capture(
         request_id="req-1",
+        strategy="cost-first",
         provider="openai",
         model="gpt-4",
         usage={"input_tokens": 1, "output_tokens": 1},
@@ -61,6 +64,7 @@ async def test_capture_awaits_sleep(monkeypatch, collector):
 async def test_capture_prints_expected_output(capsys, collector):
     await collector.capture(
         request_id="req-xyz",
+        strategy="cost-first",
         provider="anthropic",
         model="claude-3",
         usage={"input_tokens": 7, "output_tokens": 9},
@@ -73,6 +77,7 @@ async def test_capture_prints_expected_output(capsys, collector):
     # We cannot assert the timestamp, but we can assert the structure
     assert "[Telemetry]" in out
     assert "request_id=req-xyz" in out
+    assert "strategy=cost-first" in out
     assert "provider=anthropic" in out
     assert "model=claude-3" in out
     assert "input_tokens=7" in out
