@@ -191,8 +191,13 @@ integrating multiple AI providers while maintaining control over spend and servi
 ## Project Structure
 
 The FinOps LLM Router POC is organized to support scalable, enterprise-grade LLM integrations. Each folder serves a clear purpose, making it easy for teams to adopt, extend, and monitor usage.
+Ah! Now I get it — you’re talking about **GitHub**, not Jupyter or Streamlit.
 
-`````text
+On GitHub, the “Unable to render rich display / No diagram type detected” message **only appears if you try to use GitHub’s **“diagram preview”** feature (like Mermaid) on a file that it thinks might be a diagram**. But your folder tree is **plain text**, not a diagram, so GitHub can’t render it as a diagram — and that’s fine.
+
+Here’s the **correct way to include it in a README.md** so GitHub shows it as plain text **without trying to render it as a diagram**:
+
+```text
 fin_ops_router/
 ├── README.md                # Project overview and documentation
 ├── dashboards/              # Grafana / Streamlit dashboards or SQL queries
@@ -214,7 +219,15 @@ fin_ops_router/
 │       └── utils/          # Utility functions and helpers
 │           
 └── tests/                   # Unit and integration tests
-`````
+````
+
+**Important:**  
+
+1. The **opening triple backticks** must have `text` right after them: `````text``` ```.  
+2. The **closing triple backticks** must be alone on a line.  
+3. Do **not use `mermaid`** — if you write ` ```mermaid `, GitHub will try to render it as a diagram and fail.  
+
+---
 
 ## Dashboards & Observability
 
