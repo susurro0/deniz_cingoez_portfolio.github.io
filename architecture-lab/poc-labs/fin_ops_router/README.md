@@ -227,5 +227,5 @@ For detailed instructions on running the dashboard locally, see the [dashboards/
 
 ### Dashboard Overview
 
-![LLM FinOps Dashboard](/docs/fin_ops_router_dashboard.jpg "LLM FinOps Dashboard")
+![LLM FinOps Dashboard](./docs/fin_ops_router_dashboard.jpg "LLM FinOps Dashboard")
 *Example view showing requests, spend, average latency, fallbacks, provider failures, and guardrail violations.*
