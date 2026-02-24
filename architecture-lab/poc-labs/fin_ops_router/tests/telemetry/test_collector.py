@@ -19,6 +19,10 @@ async def test_capture_inserts_into_duckdb(collector):
         usage={"input_tokens": 10, "output_tokens": 5},
         cost_estimated=0.003,
         latency_ms=12.34,
+        guardrail_reason="",
+        guardrail_failed=False,
+        fallback_used=False,
+        provider_failed=False
     )
 
     rows = collector.query_all()
@@ -35,6 +39,10 @@ async def test_capture_inserts_into_duckdb(collector):
     assert row[6] == 5
     assert row[7] == 0.003
     assert row[8] == 12.34
+    assert row[9] == ""
+    assert row[10] == False
+    assert row[11] == False
+    assert row[12] == False
 
 
 @pytest.mark.asyncio
@@ -55,6 +63,10 @@ async def test_capture_awaits_sleep(monkeypatch, collector):
         usage={"input_tokens": 1, "output_tokens": 1},
         cost_estimated=0.001,
         latency_ms=1.0,
+        guardrail_reason="",
+        guardrail_failed=False,
+        fallback_used=False,
+        provider_failed=False
     )
 
     assert sleep_called is True
@@ -70,6 +82,10 @@ async def test_capture_prints_expected_output(capsys, collector):
         usage={"input_tokens": 7, "output_tokens": 9},
         cost_estimated=0.0042,
         latency_ms=55.12,
+        guardrail_reason="PII",
+        guardrail_failed=True,
+        fallback_used=False,
+        provider_failed=False
     )
 
     out = capsys.readouterr().out.strip()
@@ -84,6 +100,10 @@ async def test_capture_prints_expected_output(capsys, collector):
     assert "output_tokens=9" in out
     assert "cost=$0.0042" in out
     assert "latency=55.12ms" in out
+    assert "guardrail_reason=PII" in out
+    assert "guardrail_failed=True" in out
+    assert "fallback_used=False" in out
+    assert "provider_failed=False" in out
 
 
 @pytest.mark.asyncio
