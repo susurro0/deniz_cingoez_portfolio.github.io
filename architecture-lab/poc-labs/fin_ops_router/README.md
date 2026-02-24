@@ -216,3 +216,14 @@ fin_ops_router/
 └── tests/                   # Unit and integration tests
 
 ```
+
+## Dashboards & Observability
+
+This POC includes a **Streamlit-based LLM FinOps Dashboard** for monitoring AI usage, costs, latency, and guardrail compliance in real time.  
+
+For detailed instructions on running the dashboard locally, see the [dashboards/README.md](dashboards/README.md).
+
+### Dashboard Overview
+
+![LLM FinOps Dashboard](/docs/fin_ops_router_dashboard.jpg "LLM FinOps Dashboard")
+*Example view showing requests, spend, average latency, fallbacks, provider failures, and guardrail violations.*

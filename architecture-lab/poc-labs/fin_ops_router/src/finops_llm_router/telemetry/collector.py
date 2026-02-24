@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 from typing import Dict
 import duckdb
@@ -24,19 +26,27 @@ class TelemetryCollector:
                 usage_input INT,
                 usage_output INT,
                 cost_estimated DOUBLE,
-                latency_ms DOUBLE
+                latency_ms DOUBLE,
+                guardrail_reason VARCHAR,
+                guardrail_failed BOOL,
+                fallback_used BOOL,
+                provider_failed BOOL,
             )
         """)
 
     async def capture(
         self,
         request_id: str,
-        strategy: str,
-        provider: str,
-        model: str,
-        usage: Dict[str, int],
-        cost_estimated: float,
-        latency_ms: float,
+        strategy: str  = None,
+        provider: str = None,
+        model: str  = None,
+        usage: Dict[str, int] = None,
+        cost_estimated: float = None,
+        latency_ms: float = None,
+        guardrail_reason: str = None,
+        guardrail_failed: bool = False,
+        fallback_used: bool = False,
+        provider_failed: bool = False,
     ) -> None:
         """
         Fire-and-forget async persistence to DuckDB, with console logging.
@@ -47,7 +57,7 @@ class TelemetryCollector:
         self.conn.execute(
             """
             INSERT INTO telemetry 
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 datetime.utcnow(),
@@ -59,6 +69,10 @@ class TelemetryCollector:
                 usage.get("output_tokens", 0),
                 cost_estimated,
                 latency_ms,
+                guardrail_reason,
+                guardrail_failed,
+                fallback_used,
+                provider_failed
             )
         )
         # Console/log visualization (Director-friendly)
@@ -67,7 +81,9 @@ class TelemetryCollector:
             f"request_id={request_id} | provider={provider} | model={model} | "
             f"input_tokens={usage.get('input_tokens', 0)} | "
             f"output_tokens={usage.get('output_tokens', 0)} | "
-            f"cost=${cost_estimated:.4f} | latency={latency_ms:.2f}ms"
+            f"cost=${cost_estimated:.4f} | latency={latency_ms:.2f}ms | " 
+            f"fallback_used={fallback_used} | provider_failed={provider_failed}"
+            f"guardrail_failed={guardrail_failed} | guardrail_reason={guardrail_reason}"
         )
 
     def query_all(self):

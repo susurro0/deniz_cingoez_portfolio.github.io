@@ -276,3 +276,29 @@ def test_list_providers(mock_guard, mock_telemetry):
     )
 
     assert orch.list_providers() == ["a", "b"]
+
+# ----------------------------------------------------------------------
+# 8. No providers returned by strategy
+# ----------------------------------------------------------------------
+@pytest.mark.asyncio
+async def test_handle_no_providers(mock_guard, mock_telemetry):
+    orch = FinObsLLMOrchestrator(
+        guardrails=mock_guard,
+        providers={},  # no providers configured
+        telemetry=mock_telemetry,
+    )
+
+    empty_strategy = MagicMock()
+    empty_strategy.rank_providers.return_value = []
+    orch.strategies = {"cost": empty_strategy}
+
+    req = FinObsRequest(
+        prompt="hello",
+        task_type="general",
+        priority="cost",
+        metadata={}
+    )
+    with pytest.raises(RuntimeError) as exc:
+        await orch.handle(req)
+
+    assert "No providers available for routing." in str(exc.value)
