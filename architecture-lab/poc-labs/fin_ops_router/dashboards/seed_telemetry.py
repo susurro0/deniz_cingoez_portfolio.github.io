@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS telemetry (
     strategy VARCHAR,
     provider VARCHAR,
     model VARCHAR,
-    input_tokens INTEGER,
-    output_tokens INTEGER,
+    usage_input INTEGER,
+    usage_output INTEGER,
     cost_estimated DOUBLE,
     latency_ms DOUBLE
 )
@@ -36,12 +36,12 @@ for i in range(100):
     strat = random.choice(strategies)
     prov = random.choice(providers)
     model = random.choice(models)
-    input_tokens = random.randint(50, 300)
-    output_tokens = random.randint(50, 300)
-    cost = round(input_tokens * 0.0001 + output_tokens * 0.0001, 4)
+    usage_input = random.randint(50, 300)
+    usage_output = random.randint(50, 300)
+    cost = round(usage_input * 0.0001 + usage_output * 0.0001, 4)
     latency = round(random.uniform(50, 500), 2)
 
-    mock_rows.append((ts, req_id, strat, prov, model, input_tokens, output_tokens, cost, latency))
+    mock_rows.append((ts, req_id, strat, prov, model, usage_input, usage_output, cost, latency))
 
 # Insert mock data
 con.executemany(
