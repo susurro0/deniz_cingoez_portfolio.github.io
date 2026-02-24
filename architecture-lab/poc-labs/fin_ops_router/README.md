@@ -192,7 +192,8 @@ integrating multiple AI providers while maintaining control over spend and servi
 
 The FinOps LLM Router POC is organized to support scalable, enterprise-grade LLM integrations. Each folder serves a clear purpose, making it easy for teams to adopt, extend, and monitor usage.
 
-```mermaid
+
+```bash
 fin_ops_router/
 ├── README.md                # Project overview and documentation
 ├── dashboards/              # Grafana / Streamlit dashboards or SQL queries
@@ -214,8 +215,9 @@ fin_ops_router/
 │       └── utils/          # Utility functions and helpers
 │           
 └── tests/                   # Unit and integration tests
-
 ```
+
+---
 
 ## Dashboards & Observability
 
@@ -225,5 +227,5 @@ For detailed instructions on running the dashboard locally, see the [dashboards/
 
 ### Dashboard Overview
 
-![LLM FinOps Dashboard](/docs/fin_ops_router_dashboard.jpg "LLM FinOps Dashboard")
+![LLM FinOps Dashboard](./docs/fin_ops_router_dashboard.jpg "LLM FinOps Dashboard")
 *Example view showing requests, spend, average latency, fallbacks, provider failures, and guardrail violations.*
