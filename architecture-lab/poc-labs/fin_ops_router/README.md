@@ -192,7 +192,7 @@ integrating multiple AI providers while maintaining control over spend and servi
 
 The FinOps LLM Router POC is organized to support scalable, enterprise-grade LLM integrations. Each folder serves a clear purpose, making it easy for teams to adopt, extend, and monitor usage.
 
-```
+```mermaid
 fin_ops_router/
 ├── README.md                # Project overview and documentation
 ├── dashboards/              # Grafana / Streamlit dashboards or SQL queries
@@ -214,7 +214,6 @@ fin_ops_router/
 │       └── utils/          # Utility functions and helpers
 │           
 └── tests/                   # Unit and integration tests
-
 ```
 
 ## Dashboards & Observability
