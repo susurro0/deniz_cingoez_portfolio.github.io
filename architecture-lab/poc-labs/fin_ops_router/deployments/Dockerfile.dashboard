@@ -1,0 +1,24 @@
+# Dockerfile.dashboard
+# Use Python 3.11 slim
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Copy requirements and install
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt \
+    && pip install --no-cache-dir streamlit pandas duckdb
+
+# Copy dashboards and src (for telemetry modules)
+COPY dashboards ./dashboards
+COPY src ./src
+
+# Add src to PYTHONPATH so dashboard can import modules
+ENV PYTHONPATH=/app/src
+
+# Expose Streamlit default port
+EXPOSE 8501
+
+# Command to run the dashboard
+CMD ["streamlit", "run", "dashboards/dashboard.py", "--server.port=8501", "--server.address=0.0.0.0"]
